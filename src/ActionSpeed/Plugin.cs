@@ -15,7 +15,7 @@ namespace ActionSpeed;
 public sealed class Plugin : BasePlugin
 {
     private const string Guid = "com.dev.survivallog.actionspeed";
-    private const string Version = "0.1.0";
+    private const string Version = "0.1.1";
     private const string FurnitureUse = "FurnitureUse";
 
     /// <summary>Short chores players ask to speed up; sleep, fun, workouts, talking and repairs keep the game's pace until set.</summary>
