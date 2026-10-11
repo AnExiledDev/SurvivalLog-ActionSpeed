@@ -46,11 +46,14 @@ internal sealed class ActionWriter
             if (action != null) rows.Add(action);
         }
 
-        if (rows.Any(action => !_planned.ContainsKey(action.ID))) Plan(rows, effects);
+        var hasNewActions = rows.Any(action => !_planned.ContainsKey(action.ID));
+
+        if (hasNewActions) Plan(rows, effects);
 
         var written = rows.Count(Write);
 
-        if (written > 0) _log($"the game reloaded its action table, {written} durations written again");
+        // A sweep that just planned is writing that plan for the first time, and the plan has already been logged.
+        if (written > 0 && !hasNewActions) _log($"the game reloaded its action table, {written} durations written again");
     }
 
     private void Plan(List<Config_Action> rows, Il2CppSystem.Collections.Generic.Dictionary<int, Config_Effect> effects)
