@@ -15,7 +15,7 @@ namespace ActionSpeed;
 public sealed class Plugin : BasePlugin
 {
     private const string Guid = "com.dev.survivallog.actionspeed";
-    private const string Version = "0.1.1";
+    private const string Version = "0.2.0";
     private const string FurnitureUse = "FurnitureUse";
 
     /// <summary>Short chores players ask to speed up; sleep, fun, workouts, talking and repairs keep the game's pace until set.</summary>
@@ -31,8 +31,16 @@ public sealed class Plugin : BasePlugin
         var walkSpeed = Walking.Clamp(Config.Bind("Walking", "Speed", 1.5f,
             $"How fast your character walks, from {Walking.Slowest} to {Walking.Fastest}. 1 is the game's speed, 2 is twice as fast. Survivors and the robot walk at the game's speed.").Value);
 
-        log.Write($"===== Action Speed {Version} started: {Describe(settings)}, walking x{walkSpeed:0.##}");
-        WalkPatch.Apply(new Harmony(Guid), walkSpeed, log.Write, log.WriteFileOnly);
+        var crafting = BindKind("Crafting", "crafting at a workbench", log.Write);
+        var brewing = BindKind("Brewing", "brewing alcohol", log.Write);
+        var cooking = BindKind("Cooking", "cooking at a stove or hot pot", log.Write);
+        var harmony = new Harmony(Guid);
+
+        log.Write($"===== Action Speed {Version} started: {Describe(settings)}, walking x{walkSpeed:0.##}, crafting x{crafting.Speed:0.##}, brewing x{brewing.Speed:0.##}, cooking x{cooking.Speed:0.##}");
+        WalkPatch.Apply(harmony, walkSpeed, log.Write, log.WriteFileOnly);
+        CraftPatch.Apply(harmony, crafting, log.Write, log.WriteFileOnly);
+        BrewPatch.Apply(harmony, brewing, log.Write, log.WriteFileOnly);
+        CookPatch.Apply(harmony, cooking, log.Write, log.WriteFileOnly);
 
         SpeedTicker.Log = log.Write;
         SpeedTicker.Writer = new ActionWriter(settings, Path.Combine(Paths.BepInExRootPath, "action-speed-actions.txt"), log.Write);
@@ -59,6 +67,18 @@ public sealed class Plugin : BasePlugin
         foreach (var rejected in overrides.Rejected) log($"ignored override '{rejected}', write it as id:speed with a speed above 0");
 
         return new SpeedSettings(speedByType, overrides.Speeds, keepPaying);
+    }
+
+    /// <summary>Work the game times outside its action table; 1 leaves the game's timing exactly as it is.</summary>
+    private KindSpeed BindKind(string key, string work, Action<string> log)
+    {
+        var speed = KindSpeed.From(Config.Bind("Speed", key, 1f,
+            $"Speed of {work}, from {ActionSpeeds.Slowest} to {ActionSpeeds.Fastest}. 1 is the game's pace, 2 takes half the in-game time. 0 or less counts as 1.").Value);
+        var complaint = KindSpeeds.Complaint($"Speed/{key}", speed);
+
+        if (complaint != null) log(complaint);
+
+        return speed;
     }
 
     /// <summary>Type 0 is furniture use, which the game's enum leaves unnamed.</summary>
