@@ -96,7 +96,7 @@ public sealed class Plugin : BasePlugin
         foreach (var (type, name) in ActionTypes())
         {
             var fallback = DefaultSpeeds.TryGetValue(name, out var preset) ? preset : 1f;
-            var covers = TypeCovers.TryGetValue(name, out var text) ? text : ($"Speed of {name} actions.", $"{name} 类动作的速度。");
+            (string English, string Chinese) covers = TypeCovers.TryGetValue(name, out var text) ? text : (English:$"Speed of {name} actions.", Chinese: $"{name} 类动作的速度。");
 
             speedByType[type] = ActionSpeeds.Clamp(Config.Bind("Actions", name, fallback,
                 $"{covers.English} {ActionRange}\n" +
