@@ -9,35 +9,35 @@ namespace ActionSpeed.Adapters;
 
 /// <summary>
 /// Writes the chosen durations onto the game's action table, which every action reads its length from when it
-/// starts. The table only exists once the game has loaded it, and a reload would bring back the game's durations,
-/// so this runs on every sweep and rewrites what changed.
+/// starts, and hands each action's effect clock to the effect hook. The table only exists once the game has loaded
+/// it, and a reload would bring back the game's durations, so this runs on every sweep and rewrites what changed.
 /// </summary>
 internal sealed class ActionWriter
 {
     private readonly SpeedSettings _settings;
     private readonly string _listPath;
     private readonly Action<string> _log;
+    private readonly Action<IReadOnlyDictionary<int, float>> _publishClocks;
 
     /// <summary>Each action's duration as the game first defined it, before this mod wrote over it.</summary>
     private readonly Dictionary<int, float> _gameDuring = new();
 
     private Dictionary<int, float> _planned = new();
 
-    public ActionWriter(SpeedSettings settings, string listPath, Action<string> log)
+    public ActionWriter(SpeedSettings settings, string listPath, Action<string> log, Action<IReadOnlyDictionary<int, float>> publishClocks)
     {
         _settings = settings;
         _listPath = listPath;
         _log = log;
+        _publishClocks = publishClocks;
     }
 
     public void Sweep()
     {
         var config = BaseSingleton<ConfigManager>.IsInstanceCreated ? BaseSingleton<ConfigManager>.Instance : null;
         var actions = config?._Config_Action_Dict;
-        var effects = config?._Config_Effect_Dict;
 
-        // Without the effect table every action with an effect would look unknown and be left alone, so wait for both.
-        if (actions == null || effects == null || actions.Count == 0 || effects.Count == 0) return;
+        if (actions == null || actions.Count == 0) return;
 
         var rows = new List<Config_Action>(actions.Count);
 
@@ -48,7 +48,7 @@ internal sealed class ActionWriter
 
         var hasNewActions = rows.Any(action => !_planned.ContainsKey(action.ID));
 
-        if (hasNewActions) Plan(rows, effects);
+        if (hasNewActions) Plan(rows);
 
         var written = rows.Count(Write);
 
@@ -56,14 +56,14 @@ internal sealed class ActionWriter
         if (written > 0 && !hasNewActions) _log($"the game reloaded its action table, {written} durations written again");
     }
 
-    private void Plan(List<Config_Action> rows, Il2CppSystem.Collections.Generic.Dictionary<int, Config_Effect> effects)
+    private void Plan(List<Config_Action> rows)
     {
         var isFirstPlan = _planned.Count == 0;
-        var intervals = IntervalsOf(rows, effects);
-        var decided = rows.Select(action => GameRow(action, intervals)).Select(row => (Row: row, Decision: ActionSpeeds.Decide(row, _settings))).ToList();
-        var changed = decided.Count(pair => pair.Decision.During != pair.Row.GameDuring);
+        var decided = rows.Select(GameRow).Select(row => (Row: row, Decision: ActionSpeeds.Decide(row, _settings))).ToList();
+        var changed = decided.Count(pair => pair.Decision.Lasts != pair.Row.GameDuring);
 
         _planned = decided.ToDictionary(pair => pair.Row.Id, pair => pair.Decision.During);
+        _publishClocks(decided.Where(pair => pair.Decision.Clock != 1f).ToDictionary(pair => pair.Row.Id, pair => pair.Decision.Clock));
         WriteList(decided.Select(pair => ActionSpeeds.Describe(pair.Row, pair.Decision, TypeName(pair.Row.Type))));
 
         _log(isFirstPlan
@@ -71,30 +71,12 @@ internal sealed class ActionWriter
             : $"the game's action table gained actions, {changed} of {rows.Count} now changed");
     }
 
-    /// <summary>The timed stat values of every effect an action uses; the table holds thousands the actions never touch.</summary>
-    private static Dictionary<int, float[]> IntervalsOf(List<Config_Action> rows, Il2CppSystem.Collections.Generic.Dictionary<int, Config_Effect> effects)
-    {
-        var intervals = new Dictionary<int, float[]>();
-
-        foreach (var effectId in rows.Select(action => action.EffectConfigID).Where(id => id > 0).Distinct())
-        {
-            if (effects.TryGetValue(effectId, out var effect) && effect != null) intervals[effectId] = TimedValues(effect);
-        }
-
-        return intervals;
-    }
-
-    private static float[] TimedValues(Config_Effect effect) => new[]
-    {
-        effect.ItemSatietyInterval, effect.ItemMoraleInterval, effect.ItemStaminaInterval, effect.ItemHealthInterval, effect.ItemVitalityInterval,
-        effect.BuffSatietyInterval, effect.BuffMoraleInterval, effect.BuffStaminaInterval, effect.BuffHealthInterval, effect.BuffVitalityInterval,
-    };
-
-    private ActionRow GameRow(Config_Action action, Dictionary<int, float[]> intervals)
+    /// <summary>The game's own duration, captured the first time the action is seen, so a speed is never applied on top of an earlier one.</summary>
+    private ActionRow GameRow(Config_Action action)
     {
         if (!_gameDuring.TryGetValue(action.ID, out var gameDuring)) _gameDuring[action.ID] = gameDuring = action.During;
 
-        return new ActionRow(action.ID, DisplayName(action), action.ActionType, gameDuring, ActionSpeeds.PaysOverTime(action.EffectConfigID, intervals));
+        return new ActionRow(action.ID, DisplayName(action), action.ActionType, gameDuring);
     }
 
     private bool Write(Config_Action action)

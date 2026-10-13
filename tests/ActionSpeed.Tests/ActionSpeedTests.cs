@@ -9,73 +9,98 @@ public class DecideTests
     private const int Rest = 2;
     private const int Other = 8;
 
-    private static ActionRow Eat(float during = 1800f, bool paysOverTime = false) => new(500, "eat", Food, during, paysOverTime);
+    private static ActionRow Eat(float during = 1800f) => new(500, "eat", Food, during);
 
-    private static SpeedSettings Settings(float foodSpeed = 2f, bool keepPaying = true, Dictionary<int, float>? overrides = null) =>
-        new(new Dictionary<int, float> { [Food] = foodSpeed, [Other] = 3f }, overrides ?? new Dictionary<int, float>(), keepPaying);
+    private static SpeedSettings Settings(float foodSpeed = 2f, bool fullBenefits = true, Dictionary<int, float>? overrides = null) =>
+        new(new Dictionary<int, float> { [Food] = foodSpeed, [Other] = 3f }, overrides ?? new Dictionary<int, float>(), fullBenefits);
 
     [Fact]
-    public void Doubling_the_speed_halves_the_clock_an_action_costs()
+    public void With_full_benefits_a_doubled_speed_keeps_the_table_duration_and_runs_the_effect_twice_as_fast()
     {
         var decision = ActionSpeeds.Decide(Eat(), Settings());
 
-        Assert.Equal(900f, decision.During);
-        Assert.Equal(Reason.Changed, decision.Reason);
+        Assert.Equal(new ActionDecision(1800f, 2f, Reason.Changed), decision);
+        Assert.Equal(900f, decision.Lasts);
+    }
+
+    [Fact]
+    public void Without_full_benefits_a_doubled_speed_halves_the_table_duration_on_the_game_clock()
+    {
+        Assert.Equal(new ActionDecision(900f, 1f, Reason.Changed), ActionSpeeds.Decide(Eat(), Settings(fullBenefits: false)));
     }
 
     [Fact]
     public void A_speed_below_one_makes_an_action_take_longer()
     {
-        Assert.Equal(3600f, ActionSpeeds.Decide(Eat(), Settings(foodSpeed: 0.5f)).During);
+        Assert.Equal(3600f, ActionSpeeds.Decide(Eat(), Settings(foodSpeed: 0.5f)).Lasts);
+        Assert.Equal(3600f, ActionSpeeds.Decide(Eat(), Settings(foodSpeed: 0.5f, fullBenefits: false)).Lasts);
     }
 
     [Fact]
-    public void A_speed_of_one_leaves_the_game_duration()
+    public void A_speed_of_one_leaves_the_game_duration_and_clock()
     {
-        Assert.Equal(new ActionDecision(1800f, Reason.GameSpeed), ActionSpeeds.Decide(Eat(), Settings(foodSpeed: 1f)));
+        Assert.Equal(new ActionDecision(1800f, 1f, Reason.GameSpeed), ActionSpeeds.Decide(Eat(), Settings(foodSpeed: 1f)));
     }
 
     [Fact]
     public void An_action_type_with_no_speed_set_keeps_the_game_duration()
     {
-        Assert.Equal(new ActionDecision(600f, Reason.GameSpeed), ActionSpeeds.Decide(new ActionRow(7, "sleep", Rest, 600f, false), Settings()));
+        Assert.Equal(new ActionDecision(600f, 1f, Reason.GameSpeed), ActionSpeeds.Decide(new ActionRow(7, "sleep", Rest, 600f), Settings()));
     }
 
     [Fact]
     public void An_action_timed_by_something_else_is_never_touched_even_when_overridden()
     {
-        var crafting = new ActionRow(39, "craft", Other, -1f, false);
+        var crafting = new ActionRow(39, "craft", Other, -1f);
         var overrides = new Dictionary<int, float> { [39] = 5f };
 
-        Assert.Equal(new ActionDecision(-1f, Reason.TimedElsewhere), ActionSpeeds.Decide(crafting, Settings(overrides: overrides)));
+        Assert.Equal(new ActionDecision(-1f, 1f, Reason.TimedElsewhere), ActionSpeeds.Decide(crafting, Settings(overrides: overrides)));
     }
 
-    [Fact]
-    public void An_action_that_pays_out_while_it_runs_keeps_its_duration_so_it_still_gives_what_it_gave()
+    [Theory]
+    [InlineData(true, 1800f, 4f)]
+    [InlineData(false, 450f, 1f)]
+    public void An_override_beats_the_type_speed(bool fullBenefits, float during, float clock)
     {
-        Assert.Equal(new ActionDecision(1800f, Reason.PaysOverTime), ActionSpeeds.Decide(Eat(paysOverTime: true), Settings()));
+        var decision = ActionSpeeds.Decide(Eat(), Settings(fullBenefits: fullBenefits, overrides: new Dictionary<int, float> { [500] = 4f }));
+
+        Assert.Equal(new ActionDecision(during, clock, Reason.Overridden), decision);
     }
 
     [Fact]
-    public void Turning_off_the_pay_out_rule_speeds_those_actions_up_too()
-    {
-        Assert.Equal(900f, ActionSpeeds.Decide(Eat(paysOverTime: true), Settings(keepPaying: false)).During);
-    }
-
-    [Fact]
-    public void An_override_beats_both_the_type_speed_and_the_pay_out_rule()
-    {
-        var decision = ActionSpeeds.Decide(Eat(paysOverTime: true), Settings(overrides: new Dictionary<int, float> { [500] = 4f }));
-
-        Assert.Equal(new ActionDecision(450f, Reason.Overridden), decision);
-    }
-
-    [Fact]
-    public void An_override_of_one_puts_back_the_game_duration_for_a_single_action()
+    public void An_override_of_one_puts_back_the_game_pace_for_a_single_action()
     {
         var decision = ActionSpeeds.Decide(Eat(), Settings(overrides: new Dictionary<int, float> { [500] = 1f }));
 
         Assert.Equal(1800f, decision.During);
+        Assert.Equal(1f, decision.Clock);
+    }
+}
+
+public class NeedsClockTests
+{
+    private static SpeedSettings Settings(float typeSpeed, bool fullBenefits, float? overrideSpeed = null) =>
+        new(new Dictionary<int, float> { [1] = typeSpeed },
+            overrideSpeed is { } speed ? new Dictionary<int, float> { [112] = speed } : new Dictionary<int, float>(),
+            fullBenefits);
+
+    [Fact]
+    public void Effects_need_a_faster_clock_when_full_benefits_is_on_and_a_type_is_sped_up()
+    {
+        Assert.True(ActionSpeeds.NeedsClock(Settings(2f, fullBenefits: true)));
+    }
+
+    [Fact]
+    public void An_override_alone_is_enough_to_need_the_clock()
+    {
+        Assert.True(ActionSpeeds.NeedsClock(Settings(1f, fullBenefits: true, overrideSpeed: 3f)));
+    }
+
+    [Fact]
+    public void Without_full_benefits_or_with_every_speed_at_one_no_effect_clock_changes()
+    {
+        Assert.False(ActionSpeeds.NeedsClock(Settings(2f, fullBenefits: false, overrideSpeed: 3f)));
+        Assert.False(ActionSpeeds.NeedsClock(Settings(1f, fullBenefits: true, overrideSpeed: 1f)));
     }
 }
 
@@ -156,56 +181,29 @@ public class OverrideTests
     }
 }
 
-public class PaysOverTimeTests
-{
-    private static readonly Dictionary<int, float[]> Effects = new()
-    {
-        [10] = new[] { 0f, 0f, 0f },
-        [11] = new[] { 0f, -5f, 0f },
-        [12] = new[] { 2f, 0f, 0f },
-    };
-
-    [Fact]
-    public void An_action_with_no_effect_pays_nothing_over_time()
-    {
-        Assert.False(ActionSpeeds.PaysOverTime(0, Effects));
-    }
-
-    [Fact]
-    public void An_effect_with_only_start_and_end_values_does_not_pay_over_time()
-    {
-        Assert.False(ActionSpeeds.PaysOverTime(10, Effects));
-    }
-
-    [Fact]
-    public void A_drain_while_running_counts_as_paying_over_time_as_much_as_a_gain()
-    {
-        Assert.True(ActionSpeeds.PaysOverTime(11, Effects));
-        Assert.True(ActionSpeeds.PaysOverTime(12, Effects));
-    }
-
-    [Fact]
-    public void An_effect_missing_from_the_table_is_assumed_to_pay_over_time_so_it_is_left_alone()
-    {
-        Assert.True(ActionSpeeds.PaysOverTime(99, Effects));
-    }
-}
-
 public class DescribeTests
 {
     [Fact]
-    public void The_action_list_shows_the_game_and_new_clock_cost_in_minutes()
+    public void The_action_list_shows_how_long_an_action_lasts_and_that_it_keeps_its_full_benefits()
     {
-        var row = new ActionRow(112, "sit down", 8, 1800f, false);
+        var row = new ActionRow(112, "sit down", 8, 1800f);
 
-        Assert.Equal("112 | sit down | Other | 30.0 min -> 15.0 min | Changed", ActionSpeeds.Describe(row, new ActionDecision(900f, Reason.Changed), "Other"));
+        Assert.Equal("112 | sit down | Other | 30.0 min -> 15.0 min, full benefits | Changed", ActionSpeeds.Describe(row, new ActionDecision(1800f, 2f, Reason.Changed), "Other"));
+    }
+
+    [Fact]
+    public void An_action_cut_short_is_listed_without_full_benefits()
+    {
+        var row = new ActionRow(112, "sit down", 8, 1800f);
+
+        Assert.Equal("112 | sit down | Other | 30.0 min -> 15.0 min | Changed", ActionSpeeds.Describe(row, new ActionDecision(900f, 1f, Reason.Changed), "Other"));
     }
 
     [Fact]
     public void An_action_timed_elsewhere_is_listed_without_minutes()
     {
-        var row = new ActionRow(39, "craft", 8, -1f, false);
+        var row = new ActionRow(39, "craft", 8, -1f);
 
-        Assert.Equal("39 | craft | Other | not timed by this table | TimedElsewhere", ActionSpeeds.Describe(row, new ActionDecision(-1f, Reason.TimedElsewhere), "Other"));
+        Assert.Equal("39 | craft | Other | not timed by this table | TimedElsewhere", ActionSpeeds.Describe(row, new ActionDecision(-1f, 1f, Reason.TimedElsewhere), "Other"));
     }
 }

@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace ActionSpeed.Adapters;
 
-/// <summary>Every few real seconds, makes sure the action table carries the chosen durations.</summary>
+/// <summary>Every few real seconds, makes sure the action table carries the chosen durations and lets the effect hook forget ended effects.</summary>
 public sealed class SpeedTicker : MonoBehaviour
 {
     private const float SweepSeconds = 5f;
@@ -27,6 +27,7 @@ public sealed class SpeedTicker : MonoBehaviour
 
         try
         {
+            EffectClockPatch.ForgetEnded();
             Writer.Sweep();
         }
         catch (Exception ex)
