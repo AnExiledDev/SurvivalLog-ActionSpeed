@@ -16,12 +16,8 @@ namespace ActionSpeed.Adapters;
 /// </summary>
 internal static class EffectClockPatch
 {
-    /// <summary>The game's marker for an effect that lasts until something ends it.</summary>
-    private const float Endless = -1f;
+    private static readonly EffectClock Clock = new();
 
-    private static readonly ClockMemo Clocks = new();
-
-    private static IReadOnlyDictionary<int, float> _clockByAction = new Dictionary<int, float>();
     private static HookFailures _failures = new(_ => { }, "");
     private static Action<string> _logFileOnly = _ => { };
     private static bool _hasLoggedFirstEffect;
@@ -54,28 +50,29 @@ internal static class EffectClockPatch
     }
 
     /// <summary>The clock of every action that does not run on the game's; the action table is read after the hook goes in.</summary>
-    public static void Publish(IReadOnlyDictionary<int, float> clockByAction) => _clockByAction = clockByAction;
+    public static void Publish(IReadOnlyDictionary<int, float> clockByAction) => Clock.Publish(clockByAction);
 
     /// <summary>Called every few seconds so effects that ended are forgotten.</summary>
-    public static void ForgetEnded() => Clocks.Age();
+    public static void ForgetEnded() => Clock.ForgetEnded();
 
     /// <summary>Runs inside the game's own call, for every effect every frame; an escaping exception would reach native code.</summary>
     private static void RunFaster(EffectBtArgs args, ref float deltaTime)
     {
         try
         {
-            if (args == null || args.ArgsType != EffectArgsType.Action || args.MaxLifeDuration == Endless) return;
+            if (args == null) return;
 
-            var clock = ClockOf(args);
+            var effect = new RunningEffect(args);
+            var clock = Clock.ClockOf(effect);
 
             if (clock == 1f) return;
 
-            deltaTime *= clock;
+            deltaTime = EffectClock.Step(deltaTime, clock, EffectClock.LongestStep(Toolset._TimeScale), effect.LifeLeft);
 
             if (_hasLoggedFirstEffect) return;
 
             _hasLoggedFirstEffect = true;
-            _logFileOnly($"first sped-up effect: action effect runs x{clock:0.##}, its full length is {args.MaxLifeDuration:0.##}");
+            _logFileOnly($"first sped-up effect: action effect runs x{clock:0.##}, its full length is {effect.FullLife:0.##}");
         }
         catch (Exception ex)
         {
@@ -83,27 +80,32 @@ internal static class EffectClockPatch
         }
     }
 
-    private static float ClockOf(EffectBtArgs args)
+    /// <summary>
+    /// Reads the game's fields straight from memory. Its property getters go through a runtime call that also
+    /// allocates, which adds up when every effect asks every frame.
+    /// </summary>
+    private readonly struct RunningEffect : IRunningEffect
     {
-        var effectId = args.InstanceId;
-        var isFresh = args.CurLifeDuration == args.MaxLifeDuration;
+        private readonly EffectBtArgs _args;
 
-        if (Clocks.TryRecall(effectId, isFresh, out var clock)) return clock;
+        public RunningEffect(EffectBtArgs args) => _args = args;
 
-        clock = ClockOfOwnersAction(args.OwnerId);
-        Clocks.Remember(effectId, clock);
+        public bool IsActionEffect => _args._ArgsType_k__BackingField == EffectArgsType.Action;
 
-        return clock;
-    }
+        public float FullLife => _args._MaxLifeDuration_k__BackingField;
 
-    /// <summary>The game sets a character's current action just before starting its effect, so a fresh effect belongs to it.</summary>
-    private static float ClockOfOwnersAction(long ownerId)
-    {
-        if (!BaseSingleton<BattleLogicWorld>.IsInstanceCreated) return 1f;
+        public float LifeLeft => _args._CurLifeDuration_k__BackingField;
 
-        var owner = BaseSingleton<BattleLogicWorld>.Instance._AgentManager?.GetAgent(ownerId);
-        var action = owner == null ? null : AgentTools.GetAgentComponent<ActionComponent>(owner)?.ActionConfig;
+        public long EffectId => _args._InstanceId_k__BackingField;
 
-        return action != null && _clockByAction.TryGetValue(action.ID, out var clock) ? clock : 1f;
+        /// <summary>The game sets a character's current action just before starting its effect, so a fresh effect belongs to it.</summary>
+        public int? OwnersActionId()
+        {
+            if (!BaseSingleton<BattleLogicWorld>.IsInstanceCreated) return null;
+
+            var owner = BaseSingleton<BattleLogicWorld>.Instance._AgentManager?.GetAgent(_args._OwnerId_k__BackingField);
+
+            return owner == null ? null : AgentTools.GetAgentComponent<ActionComponent>(owner)?.ActionConfig?.ID;
+        }
     }
 }

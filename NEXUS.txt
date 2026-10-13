@@ -2,7 +2,7 @@ Name: Action Speed
 Summary: Makes everyday actions like eating, using furniture and treatment take less game time without giving less, lets you, the robot and your survivors walk faster, and can speed up crafting, brewing and cooking.
 
 Description (BBCode):
-Short chores eat your day in Survival Log. Action Speed lets you choose how much game time each kind of action takes, and how fast you, the robot and the other survivors at your base walk. Everything is set in one config file, and each setting there says what it covers.
+Short chores eat your day in Survival Log. Action Speed lets you choose how much game time each kind of action takes, and how fast you, the robot and other people at your base walk. Everything is set in one config file, and each setting there says what it covers.
 
 [size=5]Main features[/size]
 [list]
