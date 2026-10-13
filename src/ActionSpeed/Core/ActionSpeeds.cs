@@ -8,8 +8,7 @@ namespace ActionSpeed.Core;
 /// <summary>One action as the game's table defines it, before this mod wrote over it.</summary>
 /// <param name="Type">The game's ActionType, 0 for furniture use (the game leaves that bucket unnamed).</param>
 /// <param name="GameDuring">Game seconds the action takes; 0 or less marks an action timed by something else.</param>
-/// <param name="PaysOverTime">Its effect drains or restores stats for as long as it runs.</param>
-public readonly record struct ActionRow(int Id, string Name, int Type, float GameDuring, bool PaysOverTime);
+public readonly record struct ActionRow(int Id, string Name, int Type, float GameDuring);
 
 public enum Reason
 {
@@ -17,15 +16,22 @@ public enum Reason
     Overridden,
     GameSpeed,
     TimedElsewhere,
-    PaysOverTime,
 }
 
-public readonly record struct ActionDecision(float During, Reason Reason);
+/// <param name="During">Game seconds written to the action table.</param>
+/// <param name="Clock">How fast the action's effect runs: 1 is the game's own clock, 2 runs its whole effect, payouts
+/// and end alike, in half the time. Above 1 only with full benefits.</param>
+public readonly record struct ActionDecision(float During, float Clock, Reason Reason)
+{
+    /// <summary>Game seconds the action really lasts.</summary>
+    public float Lasts => During / Clock;
+}
 
 /// <param name="SpeedByType">Speed per ActionType; a type with no entry keeps the game's duration.</param>
-/// <param name="Overrides">Speed per action id, which beats the type and the pays-over-time rule.</param>
-/// <param name="KeepPayingActions">Leave actions that pay out over their duration at the game's duration.</param>
-public sealed record SpeedSettings(IReadOnlyDictionary<int, float> SpeedByType, IReadOnlyDictionary<int, float> Overrides, bool KeepPayingActions);
+/// <param name="Overrides">Speed per action id, which beats the type's speed.</param>
+/// <param name="FullBenefits">A sped-up action gives everything it gives at the game's pace, by running its effect
+/// faster; off, it is cut short and pays out only for the shorter time.</param>
+public sealed record SpeedSettings(IReadOnlyDictionary<int, float> SpeedByType, IReadOnlyDictionary<int, float> Overrides, bool FullBenefits);
 
 public sealed record ParsedOverrides(IReadOnlyDictionary<int, float> Speeds, IReadOnlyList<string> Rejected);
 
@@ -40,21 +46,25 @@ public static class ActionSpeeds
     public static float Clamp(float speed) => float.IsFinite(speed) ? Math.Clamp(speed, Slowest, Fastest) : 1f;
 
     /// <summary>
-    /// The clock an action costs at its speed. An override is the player naming one action, so it beats the type's
-    /// speed and the pay-out rule; an action timed by something else has no duration here to scale.
+    /// How an action runs at its speed. An override is the player naming one action, so it beats the type's speed;
+    /// an action timed by something else has no duration here to scale. With full benefits the table keeps the
+    /// game's duration and the effect's clock runs faster, so every payout and the end come sooner together; the
+    /// table value is never divided as well, or the action would be cut short a second time.
     /// </summary>
     public static ActionDecision Decide(ActionRow row, SpeedSettings settings)
     {
-        if (row.GameDuring <= 0f) return new ActionDecision(row.GameDuring, Reason.TimedElsewhere);
+        if (row.GameDuring <= 0f) return new ActionDecision(row.GameDuring, 1f, Reason.TimedElsewhere);
 
-        if (settings.Overrides.TryGetValue(row.Id, out var overridden)) return new ActionDecision(row.GameDuring / overridden, Reason.Overridden);
+        if (settings.Overrides.TryGetValue(row.Id, out var overridden)) return AtSpeed(row, overridden, settings.FullBenefits, Reason.Overridden);
 
-        if (!settings.SpeedByType.TryGetValue(row.Type, out var speed) || speed == 1f) return new ActionDecision(row.GameDuring, Reason.GameSpeed);
+        if (!settings.SpeedByType.TryGetValue(row.Type, out var speed) || speed == 1f) return new ActionDecision(row.GameDuring, 1f, Reason.GameSpeed);
 
-        if (row.PaysOverTime && settings.KeepPayingActions) return new ActionDecision(row.GameDuring, Reason.PaysOverTime);
-
-        return new ActionDecision(row.GameDuring / speed, Reason.Changed);
+        return AtSpeed(row, speed, settings.FullBenefits, Reason.Changed);
     }
+
+    /// <summary>Whether any action could run its effect on a faster or slower clock, which is when the clock needs hooking.</summary>
+    public static bool NeedsClock(SpeedSettings settings) =>
+        settings.FullBenefits && settings.SpeedByType.Values.Concat(settings.Overrides.Values).Any(speed => speed != 1f);
 
     /// <summary>Reads "id:speed" pairs; an entry that is not one is handed back so the player can be told.</summary>
     public static ParsedOverrides ParseOverrides(string text)
@@ -71,24 +81,18 @@ public static class ActionSpeeds
         return new ParsedOverrides(speeds, rejected);
     }
 
-    /// <summary>
-    /// Whether an effect drains or restores stats on a timer while its action runs. Shortening such an action
-    /// shrinks what it gives or takes, so it counts whichever way the values point. An effect the table does not
-    /// hold cannot be checked, so it is treated as paying.
-    /// </summary>
-    public static bool PaysOverTime(int effectId, IReadOnlyDictionary<int, float[]> intervalsByEffect)
-    {
-        if (effectId <= 0) return false;
-
-        return !intervalsByEffect.TryGetValue(effectId, out var intervals) || intervals.Any(value => value != 0f);
-    }
-
     public static string Describe(ActionRow row, ActionDecision decision, string typeName)
     {
-        var cost = row.GameDuring <= 0f ? "not timed by this table" : $"{Minutes(row.GameDuring)} -> {Minutes(decision.During)}";
+        var benefits = decision.Clock == 1f ? "" : ", full benefits";
+        var cost = row.GameDuring <= 0f ? "not timed by this table" : $"{Minutes(row.GameDuring)} -> {Minutes(decision.Lasts)}{benefits}";
 
         return $"{row.Id} | {row.Name} | {typeName} | {cost} | {decision.Reason}";
     }
+
+    private static ActionDecision AtSpeed(ActionRow row, float speed, bool isFullBenefits, Reason reason) =>
+        isFullBenefits && speed != 1f
+            ? new ActionDecision(row.GameDuring, speed, reason)
+            : new ActionDecision(row.GameDuring / speed, 1f, reason);
 
     private static bool TryParsePair(string entry, out int id, out float speed)
     {
@@ -104,12 +108,4 @@ public static class ActionSpeeds
     }
 
     private static string Minutes(float gameSeconds) => (gameSeconds / SecondsPerMinute).ToString("0.0", CultureInfo.InvariantCulture) + " min";
-}
-
-public static class Walking
-{
-    public const float Slowest = 0.25f;
-    public const float Fastest = 5f;
-
-    public static float Clamp(float multiplier) => float.IsFinite(multiplier) ? Math.Clamp(multiplier, Slowest, Fastest) : 1f;
 }

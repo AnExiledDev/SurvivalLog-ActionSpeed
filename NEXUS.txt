@@ -1,22 +1,22 @@
 Name: Action Speed
-Summary: Makes everyday actions like eating, using furniture and treatment take less game time, lets your character walk faster, and can speed up crafting, brewing and cooking.
+Summary: Makes everyday actions like eating, using furniture and treatment take less game time without giving less, lets you, the robot and your survivors walk faster, and can speed up crafting, brewing and cooking.
 
 Description (BBCode):
-Short chores eat your day in Survival Log. Action Speed lets you choose how much game time each kind of action takes, and how fast your own character walks. Everything is set in one config file.
+Short chores eat your day in Survival Log. Action Speed lets you choose how much game time each kind of action takes, and how fast you, the robot and the other survivors at your base walk. Everything is set in one config file, and each setting there says what it covers.
 
 [size=5]Main features[/size]
 [list]
 [*][b]Speed per action type[/b]: furniture use, food, treatment and other actions take half the game time by default. Every other type can be set too.[/*]
-[*][b]Effects over time kept[/b]: sleeping, resting and similar actions keep the game's pace, so you never get less out of them.[/*]
+[*][b]Full benefits[/b]: a sped-up action still gives everything it gives at the game's pace. Sleep twice as fast and you wake up just as rested. You can turn this off to cut sped-up actions short instead.[/*]
 [*][b]Single actions[/b]: set a speed for one action by its id.[/*]
 [*][b]Action list[/b]: every action with its old and new time is written to a text file.[/*]
-[*][b]Faster walking[/b]: your character walks 1.5 times as fast by default. Survivors and the robot keep the game's speed.[/*]
+[*][b]Faster walking[/b]: you, the robot and your survivors each have a walking speed, 1.5 times as fast by default. Enemies keep the game's speed.[/*]
 [*][b]Crafting, brewing and cooking[/b]: each has its own speed. Off by default.[/*]
 [/list]
 Action Speed writes no data of its own into your save and does not edit game files. It does change how much game time things take, and your save reflects that. You can remove it at any time; actions started after that take the game's own time again.
 
 [size=5]Known issues[/size]
-Speeds change game time, and game time is finicky: events, sleep and zombie waves all run on it, so odd timing is worth reporting. The crafting, brewing and cooking speeds are new in 0.2.0 and have not been run in the game yet. Back up your save before trying it for the first time. Speeds apply to everyone doing an action, survivors and the robot included. The workbench progress bar and the cooking bar can show the game's time while the work itself is shorter. If you run into anything strange, please tell me (see Feedback below).
+Speeds change game time, and game time is finicky: events, sleep and zombie waves all run on it, so odd timing is worth reporting. Full benefits, the robot and survivor walking speeds, and the crafting, brewing and cooking speeds have not been run in the game yet. Back up your save before trying it for the first time. Action speeds apply to everyone doing an action, survivors and the robot included. With full benefits on, the game may show a sped-up action's full length while the action itself ends sooner. The workbench progress bar and the cooking bar can show the game's time while the work itself is shorter. If you run into anything strange, please tell me (see Feedback below).
 
 [size=5]Requirements[/size]
 [list]
