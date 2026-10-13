@@ -21,8 +21,8 @@ One speed per action type, plus two settings: one for full benefits and one for 
 | `Move` | `1` | Moving around the map and between floors. These last as long as the walk, so this setting changes nothing; use `[Walking]` instead. |
 | `Free` | `1` | No action in the game uses this type, so this setting changes nothing. |
 | `RepairFurniture` | `1` | Speed of repairs and building work, such as Repair, Fix Door, Restore Power, Reinforce Door, Install Furniture, Move Furniture, Dismantle and Scrap. Left at 1 because it has not been checked whether a shorter repair restores less. |
-| `FullBenefits` | `true` | When true, a sped-up action still gives its full effect: a faster sleep rests you as much as a normal one, and a faster meal fills you as much. When false, a sped-up action ends early and gives only what it gave in that shorter time. |
-| `Overrides` | empty | Speeds for single actions, written as `id:speed` and separated by commas, for example `112:4, 39:2`. An override beats its type's speed. `112:4` makes Use Toilet four times as fast. |
+| `FullBenefits` | `true` | When true, a sped-up action still gives its full effect: a faster sleep rests you as much as a normal one. When false, a sped-up action ends early and gives only what it gave in that shorter time. |
+| `Overrides` | empty | Speeds for single actions, written as `id:speed` and separated by commas, for example `112:4, 39:2`. An override beats its type's speed. `112:4` makes Use Toilet four times as fast. Every action and its id is listed in `BepInEx\action-speed-actions.txt`. |
 
 To find an action's id and type, open `BepInEx\action-speed-actions.txt`. The mod writes it once the game has loaded its tables. Each line reads `id | name | type | game clock -> with this mod | why`, with times in minutes of game time. When an action keeps its full benefits, its time ends in `, full benefits`. The last column is one of:
 
@@ -44,8 +44,8 @@ What 0 does here:
 | Setting | Default | What it does |
 | --- | --- | --- |
 | `Speed` | `1.5` | How fast you walk, meaning the character you control. |
-| `RobotSpeed` | `1.5` | How fast your base's robot moves. |
-| `SurvivorSpeed` | `1.5` | How fast the other survivors at your base walk. Enemies always keep the game's speed. |
+| `RobotSpeed` | `1.5` | How fast robots move. |
+| `SurvivorSpeed` | `1.5` | How fast other people at your base walk. Enemies always keep the game's speed. |
 
 1 is the game's speed and 2 is twice as fast. Each is held between 0.25 and 5. A value below 0.25 is raised to 0.25 and a value above 5 is lowered to 5. A `0` (or a negative number) is raised to 0.25, a quarter of the game's walking speed. When all three are exactly 1, the mod does not touch walking at all.
 

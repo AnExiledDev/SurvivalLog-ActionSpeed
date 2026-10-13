@@ -14,6 +14,12 @@ public class FullBenefitsTests
     /// <summary>Game seconds per frame; at the fastest speed one frame still passes less than the shortest payout period.</summary>
     private const float FrameStep = 0.25f;
 
+    /// <summary>A long frame, such as a hitch: at high speed one frame passes more than the shortest payout period.</summary>
+    private const float LongFrameStep = 1f;
+
+    /// <summary>The shortest payout period among the shapes below, which is as long as a sped-up step may be.</summary>
+    private const float ShortestPeriod = 7f;
+
     /// <summary>Like the game's sleep: 5 every half hour from just before the first half hour, 10 at the end, a wake-up trigger near the end.</summary>
     private static readonly EffectShape Sleep = new(Life: 21600f, FirstPayout: 1799f, Period: 1800f, Payout: 5f, EndPayout: 10f, DelayAt: 21500f);
 
@@ -44,7 +50,7 @@ public class FullBenefitsTests
     public void A_sped_up_action_with_full_benefits_pays_out_exactly_what_it_pays_at_the_game_pace(float speed, string shapeName)
     {
         var (shape, gameTotal) = Shapes[shapeName];
-        var run = Run(shape, Decide(shape, speed, fullBenefits: true));
+        var run = Run(shape, Decide(shape, speed, fullBenefits: true), FrameStep);
 
         Assert.Equal(gameTotal, run.Total);
         Assert.Equal(shape.DelayAt > 0f, run.HasDelayFired);
@@ -57,14 +63,46 @@ public class FullBenefitsTests
         var shape = Shapes[shapeName].Shape;
         var expected = shape.Life / speed;
 
-        Assert.InRange(Run(shape, Decide(shape, speed, fullBenefits: true)).GameSeconds, expected, expected + FrameStep);
+        Assert.InRange(Run(shape, Decide(shape, speed, fullBenefits: true), FrameStep).GameSeconds, expected, expected + FrameStep);
+    }
+
+    public static TheoryData<float, string> FastSpeedsAndShapes()
+    {
+        var data = new TheoryData<float, string>();
+
+        foreach (var speed in new[] { 7f, 8f, 20f })
+        {
+            foreach (var name in Shapes.Keys) data.Add(speed, name);
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(FastSpeedsAndShapes))]
+    public void A_frame_that_passes_more_than_a_payout_period_loses_no_payout_and_adds_none(float speed, string shapeName)
+    {
+        var (shape, gameTotal) = Shapes[shapeName];
+        var run = Run(shape, Decide(shape, speed, fullBenefits: true), LongFrameStep);
+
+        Assert.Equal(gameTotal, run.Total);
+        Assert.Equal(shape.DelayAt > 0f, run.HasDelayFired);
+    }
+
+    [Fact]
+    public void Uncut_steps_longer_than_the_payout_period_would_lose_payouts()
+    {
+        var (shape, gameTotal) = Shapes["every 7s"];
+        var uncut = Run(shape, Decide(shape, 20f, fullBenefits: true), LongFrameStep, longestStep: float.PositiveInfinity);
+
+        Assert.True(uncut.Total < gameTotal, $"uncut steps paid {uncut.Total}, the game pays {gameTotal}");
     }
 
     [Fact]
     public void Without_full_benefits_a_sped_up_sleep_ends_as_soon_but_pays_out_less()
     {
-        var full = Run(Sleep, Decide(Sleep, 2f, fullBenefits: true));
-        var cut = Run(Sleep, Decide(Sleep, 2f, fullBenefits: false));
+        var full = Run(Sleep, Decide(Sleep, 2f, fullBenefits: true), FrameStep);
+        var cut = Run(Sleep, Decide(Sleep, 2f, fullBenefits: false), FrameStep);
 
         Assert.Equal(full.GameSeconds, cut.GameSeconds);
         Assert.True(cut.Total < full.Total, $"cut short paid {cut.Total}, full benefits paid {full.Total}");
@@ -73,7 +111,7 @@ public class FullBenefitsTests
     [Fact]
     public void Without_full_benefits_a_wake_up_set_near_the_end_never_fires()
     {
-        Assert.False(Run(Sleep, Decide(Sleep, 2f, fullBenefits: false)).HasDelayFired);
+        Assert.False(Run(Sleep, Decide(Sleep, 2f, fullBenefits: false), FrameStep).HasDelayFired);
     }
 
     private static ActionDecision Decide(EffectShape shape, float speed, bool fullBenefits) =>
@@ -81,13 +119,12 @@ public class FullBenefitsTests
 
     /// <summary>
     /// One action's effect, frame by frame, the way the game's effect manager runs it. The table duration becomes
-    /// the effect's life. Each frame the hook multiplies the time step by the clock, then the game counts down the
-    /// delayed triggers, runs the payout timer (one payout per frame at most, the overshoot carried into the next
+    /// the effect's life. Each frame the hook hands the effect a step on its clock, cut to the shortest payout
+    /// period and to the life left, then the game counts down the delayed triggers, runs the payout timer (one payout per frame at most, the overshoot carried into the next
     /// period), and last counts down the life, ending the effect with its end payout once the life reaches 0.
     /// </summary>
-    private static EffectRun Run(EffectShape shape, ActionDecision decision)
+    private static EffectRun Run(EffectShape shape, ActionDecision decision, float frameStep, float longestStep = ShortestPeriod)
     {
-        var step = FrameStep * decision.Clock;
         var life = decision.During;
         var untilPayout = shape.FirstPayout;
         var untilDelay = shape.DelayAt;
@@ -98,6 +135,8 @@ public class FullBenefitsTests
         while (true)
         {
             frames++;
+
+            var step = decision.Clock == 1f ? frameStep : EffectClock.Step(frameStep, decision.Clock, longestStep, life);
 
             if (shape.DelayAt > 0f && !hasDelayFired)
             {
@@ -115,7 +154,7 @@ public class FullBenefitsTests
 
             life -= step;
 
-            if (life <= 0f) return new EffectRun(total + shape.EndPayout, frames * FrameStep, hasDelayFired);
+            if (life <= 0f) return new EffectRun(total + shape.EndPayout, frames * frameStep, hasDelayFired);
         }
     }
 

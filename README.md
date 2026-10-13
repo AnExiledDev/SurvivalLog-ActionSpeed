@@ -2,15 +2,15 @@
 
 Makes everyday actions take less game time without giving less, and lets you, the robot and your survivors walk faster.
 
-In Survival Log every action costs game time: eating, using furniture, treating a wound, crafting, cooking. Short chores add up and eat your day. Action Speed lets you set how much game time each kind of action takes, and how fast you, the robot and the other survivors at your base walk.
+In Survival Log every action costs game time: eating, using furniture, treating a wound, crafting, cooking. Short chores add up and eat your day. Action Speed lets you set how much game time each kind of action takes, and how fast you, the robot and other people at your base walk.
 
 ## Features
 
 - **Speed per action type**: every action in the game has a type (furniture use, food, rest, entertainment, exercise, social, treatment, move, other, free, repair). Each type gets a speed: 2 means the action takes half the game time, 0.5 means twice as long. Furniture use, food, treatment and other default to 2. Every other type keeps the game's pace until you set it.
-- **Full benefits**: a sped-up action still gives everything it gives at the game's pace. Sleep twice as fast and you wake up as rested as after a full sleep; eat twice as fast and you are just as full. The mod runs the action's effect faster instead of cutting it short. Turn `FullBenefits` off to cut sped-up actions short instead, so they give only what they give in the shorter time.
+- **Full benefits**: a sped-up action still gives everything it gives at the game's pace. Sleep twice as fast and you wake up as rested as after a full sleep. The mod runs the action's effect faster instead of cutting it short. Turn `FullBenefits` off to cut sped-up actions short instead, so they give only what they give in the shorter time.
 - **Overrides by id**: set a speed for one single action by its id. An override beats its type's speed.
 - **Every action listed**: the mod writes `BepInEx\action-speed-actions.txt`, listing every action with its id, name, type, the game's time, the time with this mod, and why.
-- **Walking speed**: you (the character you control), the robot and the other survivors at your base each have a walking speed, 1.5 times as fast by default. Enemies always walk at the game's speed. The walk animation keeps up with the faster walk.
+- **Walking speed**: you (the character you control), the robot and other people at your base each have a walking speed, 1.5 times as fast by default. Enemies always walk at the game's speed. The walk animation keeps up with the faster walk.
 - **Crafting, brewing and cooking speed**: these are timed apart from other actions, so each has its own speed: crafting at a workbench, brewing alcohol, and cooking at a stove or hot pot. All three default to 1, the game's pace, and at 1 the mod does not touch them at all. The brewing panel shows the shortened hours.
 - **Keeps up with the game**: if the game reloads its action table, the mod notices within a few seconds and writes its times back.
 - **Log file**: what the mod set up at startup, and the first craft, brew, cook, walk and sped-up action effect it changed, go to `BepInEx\action-speed.log`.

@@ -104,11 +104,11 @@ public sealed class Plugin : BasePlugin
         }
 
         var isFullBenefits = Config.Bind("Actions", "FullBenefits", true,
-            "When true, a sped-up action still gives its full effect: a faster sleep rests you as much as a normal one, and a faster meal fills you as much. When false, a sped-up action ends early and gives only what it gave in that shorter time.\n" +
-            "设为 true 时，加速的动作仍有完整效果：睡得更快也能休息得和平常一样足，吃得更快也能吃得一样饱。设为 false 时，加速的动作会提前结束，只获得这段较短时间内的效果。").Value;
+            "When true, a sped-up action still gives its full effect: a faster sleep rests you as much as a normal one. When false, a sped-up action ends early and gives only what it gave in that shorter time.\n" +
+            "设为 true 时，加速的动作仍有完整效果：睡得更快也能休息得和平常一样足。设为 false 时，加速的动作会提前结束，只获得这段较短时间内的效果。").Value;
         var overrides = ActionSpeeds.ParseOverrides(Config.Bind("Actions", "Overrides", "",
-            "Speeds for single actions, written as id:speed and separated by commas; these beat the type speeds above. For example, 112:4 makes Use Toilet four times as fast.\n" +
-            "单独设置某个动作的速度，格式为 id:速度，多个用英文逗号分隔，优先于上面的类型速度。例如 112:4 让坐下就开始……（上厕所）变为四倍速。").Value);
+            "Speeds for single actions, written as id:speed and separated by commas; these beat the type speeds above. For example, 112:4 makes Use Toilet four times as fast. Every action and its id is listed in BepInEx\\action-speed-actions.txt.\n" +
+            "单独设置某个动作的速度，格式为 id:速度，多个用英文逗号分隔，优先于上面的类型速度。例如 112:4 让坐下就开始……（上厕所）变为四倍速。所有动作及其 id 列在 BepInEx\\action-speed-actions.txt 中。").Value);
 
         foreach (var rejected in overrides.Rejected) log($"ignored override '{rejected}', write it as id:speed with a speed above 0");
 
@@ -121,11 +121,11 @@ public sealed class Plugin : BasePlugin
             $"How fast you walk, meaning the character you control. {WalkRange}\n" +
             $"你的行走速度，也就是你操控的那个角色。{WalkRangeChinese}").Value;
         var robot = Config.Bind("Walking", "RobotSpeed", 1.5f,
-            $"How fast your base's robot moves. {WalkRange}\n" +
-            $"基地机器人的移动速度。{WalkRangeChinese}").Value;
+            $"How fast robots move. {WalkRange}\n" +
+            $"机器人的移动速度。{WalkRangeChinese}").Value;
         var survivor = Config.Bind("Walking", "SurvivorSpeed", 1.5f,
-            $"How fast the other survivors at your base walk. Enemies always keep the game's speed. {WalkRange}\n" +
-            $"基地里其他幸存者的行走速度。敌人始终保持游戏原速。{WalkRangeChinese}").Value;
+            $"How fast other people at your base walk. Enemies always keep the game's speed. {WalkRange}\n" +
+            $"基地里其他人的行走速度。敌人始终保持游戏原速。{WalkRangeChinese}").Value;
 
         return new WalkSpeeds(Walking.Clamp(player), Walking.Clamp(robot), Walking.Clamp(survivor));
     }
