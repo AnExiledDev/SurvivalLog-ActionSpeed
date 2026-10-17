@@ -15,7 +15,7 @@ namespace ActionSpeed;
 public sealed class Plugin : BasePlugin
 {
     private const string Guid = "com.dev.survivallog.actionspeed";
-    private const string Version = "0.3.1";
+    private const string Version = "0.4.0";
     private const string FurnitureUse = "FurnitureUse";
 
     private const string ActionRange = "From 0.25 to 20: 1 is the game's pace, 2 is twice as fast.";
@@ -71,21 +71,25 @@ public sealed class Plugin : BasePlugin
         log.TrimIfLarge();
 
         var settings = BindSettings(log.Write);
+        var isReopenFree = Config.Bind("Actions", "FreeSecondSearch", true,
+            "When true, searching a container you have already searched opens it at once: no time passes, so an expedition adds no exposure for it. When false, every search takes the game's time.\n" +
+            "设为 true 时，搜寻已经搜过的容器会立即打开：不花时间，外出探索时也不会因此增加暴露值。设为 false 时，每次搜寻都按游戏原本的时间进行。").Value;
         var walking = BindWalking();
         var crafting = BindKind("Crafting", "crafting at a workbench", "工作台手工制作", log.Write);
         var brewing = BindKind("Brewing", "brewing alcohol", "酿酒", log.Write);
         var cooking = BindKind("Cooking", "cooking at a stove or hot pot", "在燃气灶或火锅上烹饪", log.Write);
         var harmony = new Harmony(Guid);
 
-        log.Write($"===== Action Speed {Version} started: {Describe(settings)}, walking x{walking.Player:0.##} (robot x{walking.Robot:0.##}, survivors x{walking.Survivor:0.##}), crafting x{crafting.Speed:0.##}, brewing x{brewing.Speed:0.##}, cooking x{cooking.Speed:0.##}");
-        EffectClockPatch.Apply(harmony, settings, log.Write, log.WriteFileOnly);
+        log.Write($"===== Action Speed {Version} started: {Describe(settings)}, free second search {(isReopenFree ? "on" : "off")}, walking x{walking.Player:0.##} (robot x{walking.Robot:0.##}, survivors x{walking.Survivor:0.##}), crafting x{crafting.Speed:0.##}, brewing x{brewing.Speed:0.##}, cooking x{cooking.Speed:0.##}");
+        EffectClockPatch.Apply(harmony, settings, isReopenFree, log.Write, log.WriteFileOnly);
         WalkPatch.Apply(harmony, walking, log.Write, log.WriteFileOnly);
         CraftPatch.Apply(harmony, crafting, log.Write, log.WriteFileOnly);
         BrewPatch.Apply(harmony, brewing, log.Write, log.WriteFileOnly);
         CookPatch.Apply(harmony, cooking, log.Write, log.WriteFileOnly);
 
         SpeedTicker.Log = log.Write;
-        SpeedTicker.Writer = new ActionWriter(settings, Path.Combine(Paths.BepInExRootPath, "action-speed-actions.txt"), log.Write, EffectClockPatch.Publish);
+        SpeedTicker.Writer = new ActionWriter(settings, Path.Combine(Paths.BepInExRootPath, "action-speed-actions.txt"), log.Write, EffectClockPatch.Publish,
+            isReopenFree ? EffectClockPatch.PublishSearches : _ => { });
         AddComponent<SpeedTicker>();
     }
 

@@ -104,9 +104,66 @@ public class EffectClockTests
         Assert.Equal(float.PositiveInfinity, EffectClock.LongestStep(timeScale: 0));
     }
 
-    private readonly record struct FakeEffect(bool IsActionEffect, float FullLife, float LifeLeft, long EffectId, int? OwnersAction) : IRunningEffect
+    private readonly record struct FakeEffect(bool IsActionEffect, float FullLife, float LifeLeft, long EffectId, int? OwnersAction, bool IsTargetSearched = false) : IRunningEffect
     {
         public int? OwnersActionId() => OwnersAction;
+
+        public bool IsOwnersTargetSearched() => IsTargetSearched;
+    }
+
+    private const int Search = 1919;
+
+    private static EffectClock WithSearches()
+    {
+        var clock = new EffectClock();
+
+        clock.Publish(new Dictionary<int, float> { [Search] = 2f, [UseToilet] = 4f });
+        clock.PublishSearches(new HashSet<int> { Search });
+
+        return clock;
+    }
+
+    [Fact]
+    public void Searching_a_container_searched_before_ends_at_once()
+    {
+        Assert.Equal(EffectClock.Instant, WithSearches().ClockOf(Started(7, Search) with { IsTargetSearched = true }));
+    }
+
+    [Fact]
+    public void The_first_search_of_a_container_takes_the_searchs_own_time()
+    {
+        Assert.Equal(2f, WithSearches().ClockOf(Started(7, Search)));
+    }
+
+    [Fact]
+    public void An_action_that_is_not_a_search_keeps_its_clock_on_a_searched_container()
+    {
+        Assert.Equal(4f, WithSearches().ClockOf(Started(7, UseToilet) with { IsTargetSearched = true }));
+    }
+
+    [Fact]
+    public void A_second_search_is_free_even_when_no_action_is_sped_up()
+    {
+        var clock = new EffectClock();
+
+        clock.PublishSearches(new HashSet<int> { Search });
+
+        Assert.Equal(EffectClock.Instant, clock.ClockOf(Started(7, Search) with { IsTargetSearched = true }));
+    }
+
+    [Fact]
+    public void The_bar_of_a_second_search_is_shortened_with_it()
+    {
+        Assert.True(EffectClock.BarSeconds(60f, WithSearches().ClockOfAction(Search, () => true)) < 0.1f);
+    }
+
+    [Theory]
+    [InlineData(EffectClock.OpenBagEffect, 60f, true)]
+    [InlineData(EffectClock.OpenBagEffect, -1f, false)]
+    [InlineData(8, 60f, false)]
+    public void Only_a_timed_action_that_opens_a_bag_is_a_search(int effectId, float gameDuring, bool isSearch)
+    {
+        Assert.Equal(isSearch, EffectClock.IsSearch(effectId, gameDuring));
     }
 
     [Fact]
@@ -138,8 +195,8 @@ public class EffectClockTests
 
         clock.Publish(new Dictionary<int, float> { [7] = 3f });
 
-        Assert.Equal(3f, clock.ClockOfAction(7));
-        Assert.Equal(1f, clock.ClockOfAction(8));
-        Assert.Equal(1f, clock.ClockOfAction(null));
+        Assert.Equal(3f, clock.ClockOfAction(7, () => false));
+        Assert.Equal(1f, clock.ClockOfAction(8, () => false));
+        Assert.Equal(1f, clock.ClockOfAction(null, () => false));
     }
 }

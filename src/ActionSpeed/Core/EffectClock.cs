@@ -20,6 +20,9 @@ public interface IRunningEffect
 
     /// <summary>The action the effect's owner is doing now, or null when the owner or its action cannot be found.</summary>
     int? OwnersActionId();
+
+    /// <summary>The owner's action is aimed at a container that has been searched before.</summary>
+    bool IsOwnersTargetSearched();
 }
 
 /// <summary>
@@ -37,10 +40,26 @@ public sealed class EffectClock
 
     private readonly ClockMemo _memo = new();
 
+    /// <summary>
+    /// The clock of a search of a container already searched: fast enough to end within a few frames, since a
+    /// search pays out only when it ends, and still finite so the progress bar shrinks with it.
+    /// </summary>
+    public const float Instant = 10000f;
+
+    /// <summary>The game's effect that opens a container's bag when the action ends.</summary>
+    public const int OpenBagEffect = 7;
+
     private IReadOnlyDictionary<int, float> _clockByAction = new Dictionary<int, float>();
+    private IReadOnlySet<int> _searchActions = new HashSet<int>();
 
     /// <summary>The clock of every action that does not run on the game's.</summary>
     public void Publish(IReadOnlyDictionary<int, float> clockByAction) => _clockByAction = clockByAction;
+
+    /// <summary>A search waits its length and then opens the bag; tidying up opens one at once and lasts until closed.</summary>
+    public static bool IsSearch(int effectId, float gameDuring) => effectId == OpenBagEffect && gameDuring > 0f;
+
+    /// <summary>The actions that search a container, which end at once when the container was searched before.</summary>
+    public void PublishSearches(IReadOnlySet<int> searchActions) => _searchActions = searchActions;
 
     /// <summary>Called every few seconds so effects that ended are forgotten.</summary>
     public void ForgetEnded() => _memo.Age();
@@ -52,7 +71,7 @@ public sealed class EffectClock
     /// </summary>
     public float ClockOf<TEffect>(TEffect effect) where TEffect : IRunningEffect
     {
-        if (_clockByAction.Count == 0 || !effect.IsActionEffect) return 1f;
+        if ((_clockByAction.Count == 0 && _searchActions.Count == 0) || !effect.IsActionEffect) return 1f;
 
         var fullLife = effect.FullLife;
 
@@ -63,7 +82,7 @@ public sealed class EffectClock
 
         if (_memo.TryRecall(effectId, isFresh, out var clock)) return clock;
 
-        clock = ClockOfAction(effect.OwnersActionId());
+        clock = ClockOfAction(effect.OwnersActionId(), effect.IsOwnersTargetSearched);
         _memo.Remember(effectId, clock);
 
         return clock;
@@ -97,6 +116,17 @@ public sealed class EffectClock
 
     public static float LongestStep(int timeScale) => timeScale > 0 ? ShortestPayoutGameSeconds / timeScale : float.PositiveInfinity;
 
-    /// <summary>The clock an action's effect runs on; 1 for an action that keeps the game's.</summary>
-    public float ClockOfAction(int? actionId) => actionId is { } id && _clockByAction.TryGetValue(id, out var clock) ? clock : 1f;
+    /// <summary>
+    /// The clock an action's effect runs on; 1 for an action that keeps the game's. Looking in a container a second
+    /// time finds nothing new, so it costs no time, and no exposure on an expedition.
+    /// </summary>
+    /// <param name="isTargetSearched">Asked only for a search, since it reads the game's memory.</param>
+    public float ClockOfAction(int? actionId, Func<bool> isTargetSearched)
+    {
+        if (actionId is not { } id) return 1f;
+
+        if (_searchActions.Contains(id) && isTargetSearched()) return Instant;
+
+        return _clockByAction.TryGetValue(id, out var clock) ? clock : 1f;
+    }
 }

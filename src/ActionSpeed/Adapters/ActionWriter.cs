@@ -18,18 +18,20 @@ internal sealed class ActionWriter
     private readonly string _listPath;
     private readonly Action<string> _log;
     private readonly Action<IReadOnlyDictionary<int, float>> _publishClocks;
+    private readonly Action<IReadOnlySet<int>> _publishSearches;
 
     /// <summary>Each action's duration as the game first defined it, before this mod wrote over it.</summary>
     private readonly Dictionary<int, float> _gameDuring = new();
 
     private Dictionary<int, float> _planned = new();
 
-    public ActionWriter(SpeedSettings settings, string listPath, Action<string> log, Action<IReadOnlyDictionary<int, float>> publishClocks)
+    public ActionWriter(SpeedSettings settings, string listPath, Action<string> log, Action<IReadOnlyDictionary<int, float>> publishClocks, Action<IReadOnlySet<int>> publishSearches)
     {
         _settings = settings;
         _listPath = listPath;
         _log = log;
         _publishClocks = publishClocks;
+        _publishSearches = publishSearches;
     }
 
     public void Sweep()
@@ -64,6 +66,7 @@ internal sealed class ActionWriter
 
         _planned = decided.ToDictionary(pair => pair.Row.Id, pair => pair.Decision.During);
         _publishClocks(decided.Where(pair => pair.Decision.Clock != 1f).ToDictionary(pair => pair.Row.Id, pair => pair.Decision.Clock));
+        _publishSearches(rows.Where(action => EffectClock.IsSearch(action.EffectConfigID, _gameDuring[action.ID])).Select(action => action.ID).ToHashSet());
         WriteList(decided.Select(pair => ActionSpeeds.Describe(pair.Row, pair.Decision, TypeName(pair.Row.Type))));
 
         _log(isFirstPlan
