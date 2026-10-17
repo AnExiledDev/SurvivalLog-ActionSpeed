@@ -45,7 +45,9 @@ internal static class EffectClockPatch
                          ?? throw new MissingMethodException("BTEffectManager.UpdateNode(BtConfig, EffectBtArgs, float, float)");
 
             harmony.Patch(target, prefix: new HarmonyMethod(typeof(EffectClockPatch), nameof(RunFaster)));
-            log("full benefits on, sped-up actions give everything they give at the game's pace");
+            log(ActionSpeeds.NeedsClock(settings)
+                ? "full benefits on, sped-up actions give everything they give at the game's pace"
+                : "action effects hooked for free second searches only");
         }
         catch (Exception ex)
         {
