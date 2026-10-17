@@ -88,7 +88,15 @@ public sealed class EffectClock
     }
 
     /// <summary>The game counts effect time in game seconds divided by the chapter's time scale.</summary>
+    /// <summary>
+    /// How long an action's progress bar should run. The bar is sized from the action's table length, which a
+    /// sped-up effect finishes early, so the bar is shortened by the same clock to reach the end with the action.
+    /// </summary>
+    public static float BarSeconds(float during, float clock) =>
+        clock > 0f && !float.IsNaN(clock) && !float.IsInfinity(clock) ? during / clock : during;
+
     public static float LongestStep(int timeScale) => timeScale > 0 ? ShortestPayoutGameSeconds / timeScale : float.PositiveInfinity;
 
-    private float ClockOfAction(int? actionId) => actionId is { } id && _clockByAction.TryGetValue(id, out var clock) ? clock : 1f;
+    /// <summary>The clock an action's effect runs on; 1 for an action that keeps the game's.</summary>
+    public float ClockOfAction(int? actionId) => actionId is { } id && _clockByAction.TryGetValue(id, out var clock) ? clock : 1f;
 }

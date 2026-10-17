@@ -15,7 +15,7 @@ namespace ActionSpeed;
 public sealed class Plugin : BasePlugin
 {
     private const string Guid = "com.dev.survivallog.actionspeed";
-    private const string Version = "0.3.0";
+    private const string Version = "0.3.1";
     private const string FurnitureUse = "FurnitureUse";
 
     private const string ActionRange = "From 0.25 to 20: 1 is the game's pace, 2 is twice as fast.";

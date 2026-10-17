@@ -108,4 +108,38 @@ public class EffectClockTests
     {
         public int? OwnersActionId() => OwnersAction;
     }
+
+    [Fact]
+    public void A_bar_for_an_action_four_times_as_fast_runs_a_quarter_as_long()
+    {
+        Assert.Equal(10f, EffectClock.BarSeconds(40f, 4f));
+    }
+
+    [Fact]
+    public void A_bar_for_an_action_on_the_game_clock_keeps_its_length()
+    {
+        Assert.Equal(40f, EffectClock.BarSeconds(40f, 1f));
+    }
+
+    [Theory]
+    [InlineData(0f)]
+    [InlineData(-2f)]
+    [InlineData(float.NaN)]
+    [InlineData(float.PositiveInfinity)]
+    public void A_clock_that_makes_no_sense_leaves_the_bar_alone(float clock)
+    {
+        Assert.Equal(40f, EffectClock.BarSeconds(40f, clock));
+    }
+
+    [Fact]
+    public void The_clock_published_for_an_action_is_the_one_its_bar_uses()
+    {
+        var clock = new EffectClock();
+
+        clock.Publish(new Dictionary<int, float> { [7] = 3f });
+
+        Assert.Equal(3f, clock.ClockOfAction(7));
+        Assert.Equal(1f, clock.ClockOfAction(8));
+        Assert.Equal(1f, clock.ClockOfAction(null));
+    }
 }

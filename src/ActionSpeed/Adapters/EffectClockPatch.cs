@@ -46,6 +46,42 @@ internal static class EffectClockPatch
         catch (Exception ex)
         {
             log($"could not hook action effects, sped-up actions keep the game's duration: {ex.Message}");
+
+            return;
+        }
+
+        PatchProgressBar(harmony, log);
+    }
+
+    private static void PatchProgressBar(Harmony harmony, Action<string> log)
+    {
+        try
+        {
+            harmony.Patch(
+                AccessTools.Method(typeof(BaseAgent), nameof(BaseAgent.ShowUnitHeadBar)),
+                prefix: new HarmonyMethod(typeof(EffectClockPatch), nameof(ShortenBar)));
+            log("progress bars of sped-up actions fill with the action");
+        }
+        catch (Exception ex)
+        {
+            log($"could not hook the progress bar, sped-up actions finish before their bar fills: {ex.Message}");
+        }
+    }
+
+    /// <summary>The bar is sized from the action's table length just as the action starts, so the owner's current action is the one it shows.</summary>
+    private static void ShortenBar(BaseAgent __instance, ref float during)
+    {
+        try
+        {
+            if (__instance == null) return;
+
+            var actionId = AgentTools.GetAgentComponent<ActionComponent>(__instance)?.ActionConfig?.ID;
+
+            during = EffectClock.BarSeconds(during, Clock.ClockOfAction(actionId));
+        }
+        catch (Exception ex)
+        {
+            _failures.Report(ex);
         }
     }
 
