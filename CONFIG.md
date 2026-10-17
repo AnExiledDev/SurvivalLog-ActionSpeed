@@ -6,7 +6,7 @@ A speed of 1 is always the game's own pace. 2 takes half the game time, 4 takes 
 
 ## Actions
 
-One speed per action type, plus two settings: one for full benefits and one for single actions.
+One speed per action type, plus three settings: one for full benefits, one for single actions and one for searching a container again.
 
 | Setting | Default | What it does |
 | --- | --- | --- |
@@ -23,6 +23,7 @@ One speed per action type, plus two settings: one for full benefits and one for 
 | `RepairFurniture` | `1` | Speed of repairs and building work, such as Repair, Fix Door, Restore Power, Reinforce Door, Install Furniture, Move Furniture, Dismantle and Scrap. Left at 1 because it has not been checked whether a shorter repair restores less. |
 | `FullBenefits` | `true` | When true, a sped-up action still gives its full effect: a faster sleep rests you as much as a normal one. When false, a sped-up action ends early and gives only what it gave in that shorter time. |
 | `Overrides` | empty | Speeds for single actions, written as `id:speed` and separated by commas, for example `112:4, 39:2`. An override beats its type's speed. `112:4` makes Use Toilet four times as fast. Every action and its id is listed in `BepInEx\action-speed-actions.txt`. |
+| `FreeSecondSearch` | `true` | When true, searching a container you have already searched opens it at once: no game time passes, so on an expedition it adds no exposure. When false, every search takes the game's time (or its type's or override's speed). |
 
 To find an action's id and type, open `BepInEx\action-speed-actions.txt`. The mod writes it once the game has loaded its tables. Each line reads `id | name | type | game clock -> with this mod | why`, with times in minutes of game time. When an action keeps its full benefits, its time ends in `, full benefits`. The last column is one of:
 
@@ -30,6 +31,8 @@ To find an action's id and type, open `BepInEx\action-speed-actions.txt`. The mo
 - `Overridden`: set by `Overrides`.
 - `GameSpeed`: its type's speed is 1, so it keeps the game's time.
 - `TimedElsewhere`: not timed by this table (crafting, brewing, cooking and some others). Its time shows as "not timed by this table", and neither a type speed nor an override changes it. Use the `[Speed]` section for crafting, brewing and cooking.
+
+`FreeSecondSearch` counts a container as searched once its contents have been opened the first time. It applies to every search that opens a container, whatever its type speed or override, with `FullBenefits` on or off. The action list does not show it, because it depends on the container.
 
 Type speeds and override speeds are held between 0.25 and 20. A value below 0.25 is raised to 0.25 and a value above 20 is lowered to 20.
 
