@@ -39,8 +39,6 @@ Crafting, brewing and cooking are set when each one starts. A brew is timed in w
 
 ## Known issues and limits
 
-- Speeds change how much game time things take. Game time is finicky in Survival Log: events, sleep and zombie waves all run on it. If anything about timing looks odd, please tell me (see [Feedback](#feedback-and-bug-reports)).
-- Full benefits, the free second search, the robot's walking speed and the survivors' walking speed have not been run in the game yet, and neither have the crafting, brewing and cooking speeds. Back up your save before trying the mod for the first time.
 - Action speeds apply to everyone doing the action, survivors and the robot included, not only you. Walking has its own speed for you, for the robot and for survivors.
 - With `FullBenefits` on, a time the game shows for a sped-up action outside the bar over the character's head may show the game's full length, while the action itself ends sooner.
 - Effects that last a set time on their own, such as buffs, run on the game's clock as usual. Only the action's own effect runs faster.
@@ -49,10 +47,7 @@ Crafting, brewing and cooking are set when each one starts. A brew is timed in w
 - A craft, brew or cook that is already running when you change a speed keeps the length it started with.
 - Overrides on crafting, brewing and cooking actions do nothing, because those are not timed by the action table. Use the `[Speed]` settings for them.
 - Sorting has no speed of its own. The timed "organize items" action (id 11) is in the `Other` type, so it is already sped up there, and `Overrides` can set it alone. Organizing through a container's panel has no fixed length: it lasts as long as the panel is open.
-- Repairs keep the game's pace by default, because it has not been checked whether a shorter repair restores less.
 - With `FullBenefits` off, speeding up an action also shortens what its effect gives or takes over that time.
-- If the mod cannot hook the brewing panel after a game update, brews are still shortened, but the panel shows the game's hours. The log says so at startup.
-- If anything looks wrong, please tell me (see [Feedback](#feedback-and-bug-reports)).
 
 ## Requirements
 

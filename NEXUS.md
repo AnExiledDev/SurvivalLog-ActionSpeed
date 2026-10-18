@@ -19,7 +19,7 @@ Action Speed writes no data of its own into your save and does not edit game fil
 Every setting in the config file is explained in English and Chinese.
 
 [size=5]Known issues[/size]
-Speeds change game time, and game time is finicky: events, sleep and zombie waves all run on it, so odd timing is worth reporting. Full benefits, the free second search, the robot and survivor walking speeds, and the crafting, brewing and cooking speeds have not been run in the game yet. Back up your save before trying it for the first time. Action speeds apply to everyone doing an action, survivors and the robot included. The bar over a character's head fills with a sped-up action, but other times the game shows may still be the full length while the action itself ends sooner. The workbench progress bar and the cooking bar can show the game's time while the work itself is shorter. If you run into anything strange, please tell me (see Feedback below).
+Action speeds apply to everyone doing an action, survivors and the robot included. The bar over a character's head fills with a sped-up action, but other times the game shows may still be the full length while the action itself ends sooner. The workbench progress bar and the cooking bar can show the game's time while the work itself is shorter.
 
 [size=5]Requirements[/size]
 [list]
@@ -67,7 +67,7 @@ Action Speed 不会往存档里写入自己的数据，也不会修改游戏文�
 配置文件中的每项设置都有英文和中文说明。
 
 [size=5]已知问题[/size]
-速度改变的是游戏时间，而游戏时间牵一发而动全身：事件、睡眠和尸潮都依赖它，所以时间上有任何异常都值得反馈。效果不减、再次搜寻、机器人和幸存者的行走速度，以及制造、酿酒和烹饪的速度还没有在游戏中实际跑过。第一次使用前请先备份存档。动作速度对所有执行该动作的人都生效，包括幸存者和机器人。角色头顶的进度条会随加速的动作一起走完，但游戏在别处显示的时间可能仍是原本的完整时长，而动作本身会更早结束。工作台的进度条和烹饪的进度条可能显示游戏原本的时间，而实际所需时间更短。遇到任何异常，欢迎告诉我（见下方「反馈」）。
+动作速度对所有执行该动作的人都生效，包括幸存者和机器人。角色头顶的进度条会随加速的动作一起走完，但游戏在别处显示的时间可能仍是原本的完整时长，而动作本身会更早结束。工作台的进度条和烹饪的进度条可能显示游戏原本的时间，而实际所需时间更短。
 
 [size=5]前置要求[/size]
 [list]

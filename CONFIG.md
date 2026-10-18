@@ -20,7 +20,7 @@ One speed per action type, plus three settings: one for full benefits, one for s
 | `Social` | `1` | Speed of quiet time, such as Look Outside, Listen to Radio, Meditate, Journal and Do Yoga. |
 | `Move` | `1` | Moving around the map and between floors. These last as long as the walk, so this setting changes nothing; use `[Walking]` instead. |
 | `Free` | `1` | No action in the game uses this type, so this setting changes nothing. |
-| `RepairFurniture` | `1` | Speed of repairs and building work, such as Repair, Fix Door, Restore Power, Reinforce Door, Install Furniture, Move Furniture, Dismantle and Scrap. Left at 1 because it has not been checked whether a shorter repair restores less. |
+| `RepairFurniture` | `1` | Speed of repairs and building work, such as Repair, Fix Door, Restore Power, Reinforce Door, Install Furniture, Move Furniture, Dismantle and Scrap. |
 | `FullBenefits` | `true` | When true, a sped-up action still gives its full effect: a faster sleep rests you as much as a normal one. When false, a sped-up action ends early and gives only what it gave in that shorter time. |
 | `Overrides` | empty | Speeds for single actions, written as `id:speed` and separated by commas, for example `112:4, 39:2`. An override beats its type's speed. `112:4` makes Use Toilet four times as fast. Every action and its id is listed in `BepInEx\action-speed-actions.txt`. |
 | `FreeSecondSearch` | `true` | When true, searching a container you have already searched opens it at once: no game time passes, so on an expedition it adds no exposure. When false, every search takes the game's time (or its type's or override's speed). |
