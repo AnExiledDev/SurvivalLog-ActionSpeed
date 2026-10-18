@@ -35,14 +35,25 @@ public class CraftBarTests
     }
 
     [Fact]
-    public void Other_benches_other_lengths_and_crafts_left_alone_are_shown_as_the_game_says()
+    public void A_length_told_after_the_craft_started_in_other_units_is_shortened_by_as_much()
+    {
+        var bar = new CraftBar(KindSpeed.From(4f));
+
+        bar.Starting(Bench);
+        bar.Started(Bench, 20f, 5f);
+
+        Assert.Equal(3f, bar.Shown(Bench, 12f));
+    }
+
+    [Fact]
+    public void Other_benches_and_crafts_left_alone_are_shown_as_the_game_says()
     {
         var bar = new CraftBar(KindSpeed.From(4f));
 
         bar.Starting(Bench);
         Assert.Equal(20f, bar.Shown(OtherBench, 20f));
         bar.Started(Bench, 20f, 5f);
-        Assert.Equal(12f, bar.Shown(Bench, 12f));
+        Assert.Equal(20f, bar.Shown(OtherBench, 20f));
 
         bar.Starting(Bench);
         bar.Started(Bench, 20f, null);

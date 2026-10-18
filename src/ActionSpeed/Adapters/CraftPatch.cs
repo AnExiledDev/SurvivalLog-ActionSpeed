@@ -20,6 +20,7 @@ internal static class CraftPatch
     private static Action<string> _logFileOnly = _ => { };
     private static CraftBar _bar = new(KindSpeed.GamePace);
     private static bool _hasLoggedFirstCraft;
+    private static bool _hasLoggedFirstBar;
 
     /// <summary>At the game's pace nothing is hooked, which is what keeps the default timing exactly the game's.</summary>
     public static void Apply(Harmony harmony, KindSpeed speed, Action<string> log, Action<string> logFileOnly)
@@ -53,8 +54,9 @@ internal static class CraftPatch
 
         try
         {
-            var target = AccessTools.Method(typeof(Reducer_Web_ToolTable), nameof(Reducer_Web_ToolTable.RA_CheckResult))
-                         ?? throw new MissingMethodException("Reducer_Web_ToolTable.RA_CheckResult");
+            // The reducer itself is compiled into this trigger, so a hook on the reducer never runs.
+            var target = AccessTools.Method(typeof(Reducer_Web_ToolTable), nameof(Reducer_Web_ToolTable.Trigger_RA_CheckResult))
+                         ?? throw new MissingMethodException("Reducer_Web_ToolTable.Trigger_RA_CheckResult");
 
             harmony.Patch(target, prefix: new HarmonyMethod(typeof(CraftPatch), nameof(ShowShortened)));
         }
@@ -114,13 +116,22 @@ internal static class CraftPatch
     }
 
     /// <summary>Runs inside the game's own call; an escaping exception would reach native code.</summary>
-    private static void ShowShortened(Ac_ToolTable_CheckResult __0)
+    private static void ShowShortened(BaseReduxAction __0)
     {
         try
         {
-            if (__0 == null || !__0.IsCheck) return;
+            var result = __0?.TryCast<Ac_ToolTable_CheckResult>();
 
-            __0.MakeTime = _bar.Shown(__0.FurnitureId, __0.MakeTime);
+            if (result == null || !result.IsCheck) return;
+
+            var told = result.MakeTime;
+
+            result.MakeTime = _bar.Shown(result.FurnitureId, told);
+
+            if (_hasLoggedFirstBar) return;
+
+            _hasLoggedFirstBar = true;
+            _logFileOnly($"first workbench bar: told {told:0.##}s, shown {result.MakeTime:0.##}s");
         }
         catch (Exception ex)
         {
