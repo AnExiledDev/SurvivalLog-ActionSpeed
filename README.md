@@ -57,7 +57,7 @@ Crafting, brewing and cooking are set when each one starts. A brew is timed in w
 ## Install
 
 1. Install the [BepInEx Pack for Survival Log](https://www.nexusmods.com/survivallog/mods/12) (if no other mods were installed before, start the game once so BepInEx finishes setup, then quit).
-2. Download `ActionSpeed-x.y.z.zip` from the [latest release](https://github.com/AnExiledDev/SurvivalLog-ActionSpeed/releases/latest) or from Nexus Mods.
+2. Download `ActionSpeed-x.y.z.zip` from the [latest release](https://github.com/AnExiledDev/SurvivalLog-ActionSpeed/releases/latest) or from [Nexus Mods](https://www.nexusmods.com/survivallog/mods/53).
 3. Extract the zip into the game folder (the folder with `SurvivalLog.exe`). It holds a `BepInEx` folder, so the DLL lands in the right place. When asked, merge the folders. The result should be:
    `C:\Program Files (x86)\Steam\steamapps\common\Survival Log\BepInEx\plugins\ActionSpeed.dll`
 
