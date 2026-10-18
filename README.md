@@ -73,7 +73,7 @@ Settings live in `BepInEx\config\com.dev.survivallog.actionspeed.cfg`, created t
 
 Built for Survival Log 1.1.18902 with BepInEx `6.0.0-be.788`.
 
-Check `BepInEx\LogOutput.log` for `===== Action Speed 0.4.1 started:`. The rest of that line lists the speeds in use, for example `full benefits on, free second search on, walking x1.5 (robot x1.5, survivors x1.5), crafting x1, brewing x1, cooking x1` at the end. Lines below it say what was hooked, such as `full benefits on, sped-up actions give everything they give at the game's pace`, `progress bars of sped-up actions fill with the action`, `walking speed x1.5 for you, x1.5 for the robot, x1.5 for survivors` and `crafting left at the game's pace`. A line starting `could not hook` means a game update has changed that part of the game, and it stays at the game's pace until the mod is updated.
+Check `BepInEx\LogOutput.log` for `===== Action Speed 0.4.2 started:`. The rest of that line lists the speeds in use, for example `full benefits on, free second search on, walking x1.5 (robot x1.5, survivors x1.5), crafting x1, brewing x1, cooking x1` at the end. Lines below it say what was hooked, such as `full benefits on, sped-up actions give everything they give at the game's pace`, `progress bars of sped-up actions fill with the action`, `walking speed x1.5 for you, x1.5 for the robot, x1.5 for survivors` and `crafting left at the game's pace`. A line starting `could not hook` means a game update has changed that part of the game, and it stays at the game's pace until the mod is updated.
 
 Once the game has loaded its tables, look for `N of M actions changed, every action is listed in action-speed-actions.txt`.
 
