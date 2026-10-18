@@ -1,6 +1,7 @@
 using System;
 using ActionSpeed.Core;
 using GameCore.HotUpdate.Battle.Logic;
+using GameCore.HotUpdate.ReduxUI;
 using HarmonyLib;
 
 namespace ActionSpeed.Adapters;
@@ -8,14 +9,16 @@ namespace ActionSpeed.Adapters;
 /// <summary>
 /// Shortens crafting at a workbench. When a craft starts, the game sets the bench's clock to 0 and its length to the
 /// global ProductionTime (game seconds, less any talent), and the bench's update finishes the craft once the clock
-/// reaches that length. This shortens the length right after a craft starts, once per craft. Static because Harmony
-/// patches are.
+/// reaches that length. This shortens the length right after a craft starts, once per craft, and tells the bench window
+/// the shortened length so its progress bar fills as the craft finishes (<see cref="CraftBar"/>). Static because
+/// Harmony patches are.
 /// </summary>
 internal static class CraftPatch
 {
     private static KindSpeed _speed = KindSpeed.GamePace;
     private static HookFailures _failures = new(_ => { }, "");
     private static Action<string> _logFileOnly = _ => { };
+    private static CraftBar _bar = new(KindSpeed.GamePace);
     private static bool _hasLoggedFirstCraft;
 
     /// <summary>At the game's pace nothing is hooked, which is what keeps the default timing exactly the game's.</summary>
@@ -31,6 +34,7 @@ internal static class CraftPatch
         _speed = speed;
         _failures = new HookFailures(log, "shortening a craft");
         _logFileOnly = logFileOnly;
+        _bar = new CraftBar(speed);
 
         try
         {
@@ -43,6 +47,20 @@ internal static class CraftPatch
         catch (Exception ex)
         {
             log($"could not hook crafting, it stays at the game's pace: {ex.Message}");
+
+            return;
+        }
+
+        try
+        {
+            var target = AccessTools.Method(typeof(Reducer_Web_ToolTable), nameof(Reducer_Web_ToolTable.RA_CheckResult))
+                         ?? throw new MissingMethodException("Reducer_Web_ToolTable.RA_CheckResult");
+
+            harmony.Patch(target, prefix: new HarmonyMethod(typeof(CraftPatch), nameof(ShowShortened)));
+        }
+        catch (Exception ex)
+        {
+            log($"could not hook the workbench progress bar, it fills at the game's pace: {ex.Message}");
         }
     }
 
@@ -56,6 +74,7 @@ internal static class CraftPatch
 
         try
         {
+            _bar.Starting(furnitureId);
             __state = new Before(Snapshot(Bench(__instance, furnitureId)));
         }
         catch (Exception ex)
@@ -66,22 +85,42 @@ internal static class CraftPatch
 
     private static void Shorten(ToolTableManager __instance, long furnitureId, Before? __state)
     {
-        if (__state == null) return;
+        var gameDuration = 0f;
+        float? shortened = null;
 
         try
         {
             var bench = Bench(__instance, furnitureId);
 
-            if (bench == null || !KindSpeeds.IsFreshCraft(__state.Bench, new CraftSnapshot(bench.State, bench.MakingTime))) return;
+            if (__state == null || bench == null || !KindSpeeds.IsFreshCraft(__state.Bench, new CraftSnapshot(bench.State, bench.MakingTime))) return;
 
-            var gameDuration = bench.MakingDuration;
-
+            gameDuration = bench.MakingDuration;
             bench.MakingDuration = KindSpeeds.ScaleSeconds(gameDuration, _speed);
+            shortened = bench.MakingDuration;
 
             if (_hasLoggedFirstCraft) return;
 
             _hasLoggedFirstCraft = true;
             _logFileOnly($"first craft: game length {gameDuration:0.##}s, now {bench.MakingDuration:0.##}s");
+        }
+        catch (Exception ex)
+        {
+            _failures.Report(ex);
+        }
+        finally
+        {
+            _bar.Started(furnitureId, gameDuration, shortened);
+        }
+    }
+
+    /// <summary>Runs inside the game's own call; an escaping exception would reach native code.</summary>
+    private static void ShowShortened(Ac_ToolTable_CheckResult __0)
+    {
+        try
+        {
+            if (__0 == null || !__0.IsCheck) return;
+
+            __0.MakeTime = _bar.Shown(__0.FurnitureId, __0.MakeTime);
         }
         catch (Exception ex)
         {
