@@ -30,7 +30,7 @@ To find an action's id and type, open `BepInEx\action-speed-actions.txt`. The mo
 - `Changed`: sped up (or slowed down) by its type's speed.
 - `Overridden`: set by `Overrides`.
 - `GameSpeed`: its type's speed is 1, so it keeps the game's time.
-- `TimedElsewhere`: not timed by this table (crafting, brewing, cooking and some others). Its time shows as "not timed by this table", and neither a type speed nor an override changes it. Use the `[Speed]` section for crafting, brewing and cooking.
+- `TimedElsewhere`: not timed by this table (crafting, brewing, cooking and some others). Its time shows as "not timed by this table", and neither a type speed nor an override changes it. Use the `[Speed]` section for crafting. Brewing and cooking are in the Machine Speed mod.
 
 `FreeSecondSearch` counts a container as searched once its contents have been opened the first time. It applies to every search that opens a container, whatever its type speed or override, with `FullBenefits` on or off. The action list does not show it, because it depends on the container.
 
@@ -54,16 +54,14 @@ What 0 does here:
 
 ## Speed
 
-Crafting, brewing and cooking are timed apart from the action table, so each has its own speed here. At 1 (the default) the mod does not touch that kind of work at all.
+Crafting is timed apart from the action table, so it has its own speed here. At 1 (the default) the mod does not touch crafting at all. Brewing and cooking speeds are in the Machine Speed mod.
 
 | Setting | Default | What it does |
 | --- | --- | --- |
 | `Crafting` | `1` | Speed of crafting at a workbench. 2 halves the time a craft takes. |
-| `Brewing` | `1` | Speed of brewing alcohol. 2 halves the brew's hours. A brew is timed in whole hours, so the result is rounded to the nearest hour and is never less than 1 hour. The brewing panel shows the shortened hours. |
-| `Cooking` | `1` | Speed of cooking at a stove or hot pot. 2 halves the cooking time. Fuel burns by how far the cook has got, so a shorter cook burns the same fuel per dish. |
 
-Each is held between 0.25 and 20. A value outside that range is pulled to the nearest end, and the log says so at startup, for example `Speed/Crafting = 50 is outside 0.25 to 20, using 20`.
+It is held between 0.25 and 20. A value outside that range is pulled to the nearest end, and the log says so at startup, for example `Speed/Crafting = 50 is outside 0.25 to 20, using 20`.
 
-What 0 does here: `0` or a negative number counts as 1, the game's pace, and the log says so at startup, for example `Speed/Cooking = 0 is not a speed above 0, using the game's pace (1)`.
+What 0 does here: `0` or a negative number counts as 1, the game's pace, and the log says so at startup, for example `Speed/Crafting = 0 is not a speed above 0, using the game's pace (1)`.
 
-A craft, brew or cook keeps the length it had when it started, so a change here only affects ones started after the next game start.
+A craft keeps the length it had when it started, so a change here only affects ones started after the next game start.

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.0
+
+The `Brewing` and `Cooking` settings moved to the new Machine Speed mod, which reads your values from this mod's config the first time it starts. Action Speed now covers what you do; Machine Speed covers how fast machines work.
+
 ## 0.4.2
 
 The workbench progress bar fills all the way when crafting is sped up. Before, the craft finished while the bar was still at about a fifth. No setting changed.

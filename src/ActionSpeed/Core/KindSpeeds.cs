@@ -49,8 +49,8 @@ public sealed class KindSpeed
 public readonly record struct CraftSnapshot(int State, float MakingTime);
 
 /// <summary>
-/// Shortens work the game times outside its action table: crafting at a workbench (game seconds), brewing (game
-/// hours) and cooking (game seconds). Durations only ever get shorter or longer, never zero, so nothing is skipped.
+/// Shortens work the game times outside its action table: crafting at a workbench, in game seconds. Durations only
+/// ever get shorter or longer, never zero, so nothing is skipped.
 /// </summary>
 public static class KindSpeeds
 {
@@ -69,10 +69,6 @@ public static class KindSpeeds
     /// <summary>A duration the game keeps as a float; one it does not time (0 or less) is left alone.</summary>
     public static float ScaleSeconds(float gameSeconds, KindSpeed speed) =>
         speed.IsGamePace || !float.IsFinite(gameSeconds) || gameSeconds <= 0f ? gameSeconds : gameSeconds / speed.Speed;
-
-    /// <summary>A duration the game keeps in whole hours; never rounds a real duration down to nothing.</summary>
-    public static int ScaleHours(int gameHours, KindSpeed speed) =>
-        speed.IsGamePace || gameHours <= 0 ? gameHours : Math.Max(1, (int)Math.Round(gameHours / speed.Speed, MidpointRounding.AwayFromZero));
 
     /// <summary>
     /// Whether a start request just began a new craft. The game sets a fresh craft's clock to 0 and its state to

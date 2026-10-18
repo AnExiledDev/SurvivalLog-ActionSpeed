@@ -48,20 +48,20 @@ public class KindSpeedTests
     [Fact]
     public void A_clamped_speed_is_reported_with_its_key_and_what_is_used_instead()
     {
-        var complaint = KindSpeeds.Complaint("Speed/Brewing", KindSpeed.From(500f));
+        var complaint = KindSpeeds.Complaint("Speed/Crafting", KindSpeed.From(500f));
 
         Assert.NotNull(complaint);
-        Assert.Contains("Speed/Brewing", complaint);
+        Assert.Contains("Speed/Crafting", complaint);
         Assert.Contains("using 20", complaint);
     }
 
     [Fact]
     public void A_rejected_speed_is_reported_as_running_at_the_game_pace()
     {
-        var complaint = KindSpeeds.Complaint("Speed/Cooking", KindSpeed.From(0f));
+        var complaint = KindSpeeds.Complaint("Speed/Crafting", KindSpeed.From(0f));
 
         Assert.NotNull(complaint);
-        Assert.Contains("Speed/Cooking", complaint);
+        Assert.Contains("Speed/Crafting", complaint);
         Assert.Contains("game's pace", complaint);
     }
 }
@@ -82,30 +82,20 @@ public class ScaleTests
         Assert.Equal(gameSeconds, KindSpeeds.ScaleSeconds(gameSeconds, KindSpeed.From(1f)));
     }
 
-    [Theory]
-    [InlineData(24)]
-    [InlineData(37)]
-    [InlineData(168)]
-    public void A_duration_in_hours_at_speed_one_is_unchanged_by_the_arithmetic(int gameHours)
-    {
-        Assert.Equal(gameHours, KindSpeeds.ScaleHours(gameHours, KindSpeed.From(1f)));
-    }
-
     [Fact]
     public void A_rejected_speed_leaves_durations_at_the_game_pace()
     {
         Assert.Equal(5f, KindSpeeds.ScaleSeconds(5f, KindSpeed.From(-1f)));
-        Assert.Equal(24, KindSpeeds.ScaleHours(24, KindSpeed.From(0f)));
     }
 
     [Fact]
-    public void Doubling_the_speed_halves_a_craft_or_a_cook()
+    public void Doubling_the_speed_halves_a_craft()
     {
         Assert.Equal(2.5f, KindSpeeds.ScaleSeconds(5f, KindSpeed.From(2f)));
     }
 
     [Fact]
-    public void A_speed_below_one_makes_a_cook_take_longer()
+    public void A_speed_below_one_makes_a_craft_take_longer()
     {
         Assert.Equal(10f, KindSpeeds.ScaleSeconds(5f, KindSpeed.From(0.5f)));
     }
@@ -116,27 +106,6 @@ public class ScaleTests
     public void A_duration_the_game_does_not_time_is_left_alone(float gameSeconds)
     {
         Assert.Equal(gameSeconds, KindSpeeds.ScaleSeconds(gameSeconds, KindSpeed.From(4f)));
-    }
-
-    [Fact]
-    public void Doubling_the_speed_halves_a_brew()
-    {
-        Assert.Equal(12, KindSpeeds.ScaleHours(24, KindSpeed.From(2f)));
-    }
-
-    [Fact]
-    public void A_brew_that_does_not_divide_evenly_rounds_to_the_nearest_hour()
-    {
-        Assert.Equal(13, KindSpeeds.ScaleHours(25, KindSpeed.From(2f)));
-        Assert.Equal(3, KindSpeeds.ScaleHours(10, KindSpeed.From(3f)));
-    }
-
-    [Theory]
-    [InlineData(1)]
-    [InlineData(24)]
-    public void Even_the_fastest_speed_never_shortens_a_brew_to_nothing(int gameHours)
-    {
-        Assert.Equal(1, KindSpeeds.ScaleHours(gameHours, KindSpeed.From(20f)));
     }
 }
 

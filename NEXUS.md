@@ -1,5 +1,5 @@
 Name: Action Speed
-Summary: Makes everyday actions like eating, using furniture and treatment take less game time without giving less, lets you, the robot and your survivors walk faster, and can speed up crafting, brewing and cooking. 让吃饭、使用家具、吃药等日常动作花更少的游戏时间而效果不减，让你、机器人和幸存者走得更快，还能加快制造、酿酒和烹饪。
+Summary: Makes everyday actions like eating, using furniture and treatment take less game time without giving less, lets you, the robot and your survivors walk faster, and can speed up crafting. 让吃饭、使用家具、吃药等日常动作花更少的游戏时间而效果不减，让你、机器人和幸存者走得更快，还能加快制造。
 
 Description (BBCode):
 Short chores eat your day in Survival Log. Action Speed lets you choose how much game time each kind of action takes, and how fast you, the robot and other people at your base walk. Everything is set in one config file, and each setting there says what it covers.
@@ -12,14 +12,14 @@ Short chores eat your day in Survival Log. Action Speed lets you choose how much
 [*][b]Single actions[/b]: set a speed for one action by its id.[/*]
 [*][b]Action list[/b]: every action with its old and new time is written to a text file.[/*]
 [*][b]Faster walking[/b]: you, the robot and your survivors each have a walking speed, 1.5 times as fast by default. Enemies keep the game's speed.[/*]
-[*][b]Crafting, brewing and cooking[/b]: each has its own speed. Off by default.[/*]
+[*][b]Crafting[/b]: its own speed. Off by default. Brewing and cooking speeds are in Machine Speed.[/*]
 [/list]
 Action Speed writes no data of its own into your save and does not edit game files. It does change how much game time things take, and your save reflects that. You can remove it at any time; actions started after that take the game's own time again.
 
 Every setting in the config file is explained in English and Chinese.
 
 [size=5]Known issues[/size]
-Action speeds apply to everyone doing an action, survivors and the robot included. The bar over a character's head fills with a sped-up action, but other times the game shows may still be the full length while the action itself ends sooner. The workbench progress bar and the cooking bar can show the game's time while the work itself is shorter.
+Action speeds apply to everyone doing an action, survivors and the robot included. The bar over a character's head fills with a sped-up action, but other times the game shows may still be the full length while the action itself ends sooner.
 
 [size=5]Requirements[/size]
 [list]
