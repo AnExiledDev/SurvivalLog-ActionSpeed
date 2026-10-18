@@ -59,4 +59,15 @@ public class CraftBarTests
         bar.Started(Bench, 20f, null);
         Assert.Equal(20f, bar.Shown(Bench, 20f));
     }
+
+    [Fact]
+    public void A_start_that_ended_without_finishing_leaves_later_lengths_as_the_game_says()
+    {
+        var bar = new CraftBar(KindSpeed.From(4f));
+
+        bar.Starting(Bench);
+        bar.StartEnded();
+
+        Assert.Equal(20f, bar.Shown(Bench, 20f));
+    }
 }

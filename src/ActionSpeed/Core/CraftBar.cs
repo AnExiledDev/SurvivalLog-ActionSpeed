@@ -38,6 +38,9 @@ public sealed class CraftBar
         _starting = null;
     }
 
+    /// <summary>The start request ended without finishing, so later lengths are not scaled as if it still ran.</summary>
+    public void StartEnded() => _starting = null;
+
     /// <summary>The craft length the bench window should be told, given the length the game told it.</summary>
     public float Shown(long benchId, float seconds)
     {

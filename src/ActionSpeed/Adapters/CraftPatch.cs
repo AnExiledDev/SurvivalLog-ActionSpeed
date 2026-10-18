@@ -42,7 +42,8 @@ internal static class CraftPatch
             var target = AccessTools.Method(typeof(ToolTableManager), nameof(ToolTableManager.StartProduction))
                          ?? throw new MissingMethodException("ToolTableManager.StartProduction");
 
-            harmony.Patch(target, prefix: new HarmonyMethod(typeof(CraftPatch), nameof(Remember)), postfix: new HarmonyMethod(typeof(CraftPatch), nameof(Shorten)));
+            harmony.Patch(target, prefix: new HarmonyMethod(typeof(CraftPatch), nameof(Remember)), postfix: new HarmonyMethod(typeof(CraftPatch), nameof(Shorten)),
+                finalizer: new HarmonyMethod(typeof(CraftPatch), nameof(EndStart)));
             log($"crafting x{speed.Speed:0.##}");
         }
         catch (Exception ex)
@@ -114,6 +115,9 @@ internal static class CraftPatch
             _bar.Started(furnitureId, gameDuration, shortened);
         }
     }
+
+    /// <summary>Runs after the start request even when it threw, which skips <see cref="Shorten"/>.</summary>
+    private static void EndStart() => _bar.StartEnded();
 
     /// <summary>Runs inside the game's own call; an escaping exception would reach native code.</summary>
     private static void ShowShortened(BaseReduxAction __0)
