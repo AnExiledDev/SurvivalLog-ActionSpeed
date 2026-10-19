@@ -1,6 +1,6 @@
 # Action Speed settings
 
-Settings live in `BepInEx\config\com.dev.survivallog.actionspeed.cfg`, created the first time the game starts with the mod. Change them in game on the Mod Manager's Mods screen, where they take effect at once, or edit the file while the game is closed. Delete the file to get the defaults back. Each setting in the file says what it does, in English and Chinese.
+Settings live in `BepInEx\config\com.dev.survivallog.actionspeed.cfg`, created the first time the game starts with the mod. Change them in game on the Mod Manager's Mods screen, where they take effect at once, or edit the file while the game is closed. Delete the file to get the defaults back. Each setting in the file says what it does, in English and Chinese. Without Exiled's Toolkit installed, changes made on the Mods screen take effect at the next game start instead.
 
 A speed of 1 is always the game's own pace. 2 takes half the game time, 4 takes a quarter, 0.5 takes twice as long. What `0` does is different in each section, so it is noted under each table.
 
