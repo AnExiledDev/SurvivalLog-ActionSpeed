@@ -7,14 +7,13 @@ using ActionSpeed.Core;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Unity.IL2CPP;
-using ExiledToolkit;
 using GameCore.HotUpdate;
 using HarmonyLib;
 
 namespace ActionSpeed;
 
 [BepInPlugin(Guid, "Action Speed", Version)]
-[BepInDependency(ExiledToolkit.Plugin.Guid, ">=0.4.0")]
+[BepInDependency(OptionalLive.ToolkitGuid, BepInDependency.DependencyFlags.SoftDependency)]
 public sealed class Plugin : BasePlugin
 {
     private const string Guid = "com.dev.survivallog.actionspeed";
@@ -69,6 +68,8 @@ public sealed class Plugin : BasePlugin
 
     public override void Load()
     {
+        if (!OptionalLive.IsToolkitInstalled) Log.LogInfo(OptionalLive.MissingNote);
+
         var log = new SpeedLog(Log, Path.Combine(Paths.BepInExRootPath, "action-speed.log"));
 
         log.TrimIfLarge();
@@ -87,7 +88,7 @@ public sealed class Plugin : BasePlugin
         WalkPatch.Apply(harmony, log.Write, log.WriteFileOnly);
         CraftPatch.Apply(harmony, log.Write, log.WriteFileOnly);
 
-        LiveSettings.Watch(() =>
+        OptionalLive.Watch(() =>
         {
             var settings = ReadActions(actions, log.Write);
 
@@ -96,8 +97,8 @@ public sealed class Plugin : BasePlugin
             EffectClockPatch.Use(settings, isReopenFree.Value);
         }, actions.All.Append(isReopenFree).ToArray());
 
-        LiveSettings.Watch(() => WalkPatch.Use(ReadWalking(walking)), walking.Player, walking.Robot, walking.Survivor);
-        LiveSettings.Watch(crafting, speed => CraftPatch.Use(ReadKind("Crafting", speed, log.Write)));
+        OptionalLive.Watch(() => WalkPatch.Use(ReadWalking(walking)), walking.Player, walking.Robot, walking.Survivor);
+        OptionalLive.Watch(crafting, speed => CraftPatch.Use(ReadKind("Crafting", speed, log.Write)));
 
         SpeedTicker.Log = log.Write;
         SpeedTicker.Writer = writer;
