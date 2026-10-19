@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.0
+
+- Settings changed on the Mod Manager's Mods screen take effect at once. An action, walk or craft already under way keeps the length it started with.
+- The Mods screen shows the mod's name, description, category and links.
+- Needs Exiled's Toolkit 0.4.0 or newer.
+
 ## 0.5.0
 
 The `Brewing` and `Cooking` settings moved to the new Machine Speed mod, which reads your values from this mod's config the first time it starts. Action Speed now covers what you do; Machine Speed covers how fast machines work.

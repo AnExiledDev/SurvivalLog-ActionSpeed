@@ -5,17 +5,20 @@ using System.Linq;
 using ActionSpeed.Adapters;
 using ActionSpeed.Core;
 using BepInEx;
+using BepInEx.Configuration;
 using BepInEx.Unity.IL2CPP;
+using ExiledToolkit;
 using GameCore.HotUpdate;
 using HarmonyLib;
 
 namespace ActionSpeed;
 
 [BepInPlugin(Guid, "Action Speed", Version)]
+[BepInDependency(ExiledToolkit.Plugin.Guid, ">=0.4.0")]
 public sealed class Plugin : BasePlugin
 {
     private const string Guid = "com.dev.survivallog.actionspeed";
-    private const string Version = "0.5.0";
+    private const string Version = "0.6.0";
     private const string FurnitureUse = "FurnitureUse";
 
     private const string ActionRange = "From 0.25 to 20: 1 is the game's pace, 2 is twice as fast.";
@@ -70,72 +73,98 @@ public sealed class Plugin : BasePlugin
 
         log.TrimIfLarge();
 
-        var settings = BindSettings(log.Write);
+        var actions = BindActions();
         var isReopenFree = Config.Bind("Actions", "FreeSecondSearch", true,
             "When true, searching a container you have already searched opens it at once: no time passes, so an expedition adds no exposure for it. When false, every search takes the game's time.\n" +
-            "设为 true 时，搜寻已经搜过的容器会立即打开：不花时间，外出探索时也不会因此增加暴露值。设为 false 时，每次搜寻都按游戏原本的时间进行。").Value;
+            "设为 true 时，搜寻已经搜过的容器会立即打开：不花时间，外出探索时也不会因此增加暴露值。设为 false 时，每次搜寻都按游戏原本的时间进行。");
         var walking = BindWalking();
-        var crafting = BindKind("Crafting", "crafting at a workbench", "工作台手工制作", log.Write);
+        var crafting = BindKind("Crafting", "crafting at a workbench", "工作台手工制作");
         var harmony = new Harmony(Guid);
+        var writer = new ActionWriter(Path.Combine(Paths.BepInExRootPath, "action-speed-actions.txt"), log.Write, EffectClockPatch.Publish, EffectClockPatch.PublishSearches);
 
-        log.Write($"===== Action Speed {Version} started: {Describe(settings)}, free second search {(isReopenFree ? "on" : "off")}, walking x{walking.Player:0.##} (robot x{walking.Robot:0.##}, survivors x{walking.Survivor:0.##}), crafting x{crafting.Speed:0.##}");
-        EffectClockPatch.Apply(harmony, settings, isReopenFree, log.Write, log.WriteFileOnly);
-        WalkPatch.Apply(harmony, walking, log.Write, log.WriteFileOnly);
-        CraftPatch.Apply(harmony, crafting, log.Write, log.WriteFileOnly);
+        log.Write($"===== Action Speed {Version} started");
+        EffectClockPatch.Apply(harmony, log.Write, log.WriteFileOnly);
+        WalkPatch.Apply(harmony, log.Write, log.WriteFileOnly);
+        CraftPatch.Apply(harmony, log.Write, log.WriteFileOnly);
+
+        LiveSettings.Watch(() =>
+        {
+            var settings = ReadActions(actions, log.Write);
+
+            log.Write($"{Describe(settings)}, free second search {(isReopenFree.Value ? "on" : "off")}");
+            writer.Use(settings, isReopenFree.Value);
+            EffectClockPatch.Use(settings, isReopenFree.Value);
+        }, actions.All.Append(isReopenFree).ToArray());
+
+        LiveSettings.Watch(() => WalkPatch.Use(ReadWalking(walking)), walking.Player, walking.Robot, walking.Survivor);
+        LiveSettings.Watch(crafting, speed => CraftPatch.Use(ReadKind("Crafting", speed, log.Write)));
 
         SpeedTicker.Log = log.Write;
-        SpeedTicker.Writer = new ActionWriter(settings, Path.Combine(Paths.BepInExRootPath, "action-speed-actions.txt"), log.Write, EffectClockPatch.Publish,
-            isReopenFree ? EffectClockPatch.PublishSearches : _ => { });
+        SpeedTicker.Writer = writer;
         AddComponent<SpeedTicker>();
     }
 
-    private SpeedSettings BindSettings(Action<string> log)
+    private ActionEntries BindActions()
     {
-        var speedByType = new Dictionary<int, float>();
+        var speeds = new List<(int Type, ConfigEntry<float> Speed)>();
 
         foreach (var (type, name) in ActionTypes())
         {
             var fallback = DefaultSpeeds.TryGetValue(name, out var preset) ? preset : 1f;
             (string English, string Chinese) covers = TypeCovers.TryGetValue(name, out var text) ? text : (English:$"Speed of {name} actions.", Chinese: $"{name} 类动作的速度。");
 
-            speedByType[type] = ActionSpeeds.Clamp(Config.Bind("Actions", name, fallback,
+            speeds.Add((type, Config.Bind("Actions", name, fallback,
                 $"{covers.English} {ActionRange}\n" +
-                $"{covers.Chinese}{ActionRangeChinese}").Value);
+                $"{covers.Chinese}{ActionRangeChinese}")));
         }
 
         var isFullBenefits = Config.Bind("Actions", "FullBenefits", true,
             "When true, a sped-up action still gives its full effect: a faster sleep rests you as much as a normal one. When false, a sped-up action ends early and gives only what it gave in that shorter time.\n" +
-            "设为 true 时，加速的动作仍有完整效果：睡得更快也能休息得和平常一样足。设为 false 时，加速的动作会提前结束，只获得这段较短时间内的效果。").Value;
-        var overrides = ActionSpeeds.ParseOverrides(Config.Bind("Actions", "Overrides", "",
+            "设为 true 时，加速的动作仍有完整效果：睡得更快也能休息得和平常一样足。设为 false 时，加速的动作会提前结束，只获得这段较短时间内的效果。");
+        var overrides = Config.Bind("Actions", "Overrides", "",
             "Speeds for single actions, written as id:speed and separated by commas; these beat the type speeds above. For example, 112:4 makes Use Toilet four times as fast. Every action and its id is listed in BepInEx\\action-speed-actions.txt.\n" +
-            "单独设置某个动作的速度，格式为 id:速度，多个用英文逗号分隔，优先于上面的类型速度。例如 112:4 让坐下就开始……（上厕所）变为四倍速。所有动作及其 id 列在 BepInEx\\action-speed-actions.txt 中。").Value);
+            "单独设置某个动作的速度，格式为 id:速度，多个用英文逗号分隔，优先于上面的类型速度。例如 112:4 让坐下就开始……（上厕所）变为四倍速。所有动作及其 id 列在 BepInEx\\action-speed-actions.txt 中。");
+
+        return new ActionEntries(speeds, isFullBenefits, overrides);
+    }
+
+    private static SpeedSettings ReadActions(ActionEntries actions, Action<string> log)
+    {
+        var speedByType = actions.Speeds.ToDictionary(pair => pair.Type, pair => ActionSpeeds.Clamp(pair.Speed.Value));
+        var overrides = ActionSpeeds.ParseOverrides(actions.Overrides.Value);
 
         foreach (var rejected in overrides.Rejected) log($"ignored override '{rejected}', write it as id:speed with a speed above 0");
 
-        return new SpeedSettings(speedByType, overrides.Speeds, isFullBenefits);
+        return new SpeedSettings(speedByType, overrides.Speeds, actions.FullBenefits.Value);
     }
 
-    private WalkSpeeds BindWalking()
+    private WalkEntries BindWalking()
     {
         var player = Config.Bind("Walking", "Speed", 1.5f,
             $"How fast you walk, meaning the character you control. {WalkRange}\n" +
-            $"你的行走速度，也就是你操控的那个角色。{WalkRangeChinese}").Value;
+            $"你的行走速度，也就是你操控的那个角色。{WalkRangeChinese}");
         var robot = Config.Bind("Walking", "RobotSpeed", 1.5f,
             $"How fast robots move. {WalkRange}\n" +
-            $"机器人的移动速度。{WalkRangeChinese}").Value;
+            $"机器人的移动速度。{WalkRangeChinese}");
         var survivor = Config.Bind("Walking", "SurvivorSpeed", 1.5f,
             $"How fast other people at your base walk. Enemies always keep the game's speed. {WalkRange}\n" +
-            $"基地里其他人的行走速度。敌人始终保持游戏原速。{WalkRangeChinese}").Value;
+            $"基地里其他人的行走速度。敌人始终保持游戏原速。{WalkRangeChinese}");
 
-        return new WalkSpeeds(Walking.Clamp(player), Walking.Clamp(robot), Walking.Clamp(survivor));
+        return new WalkEntries(player, robot, survivor);
     }
 
+    private static WalkSpeeds ReadWalking(WalkEntries walking) =>
+        new(Walking.Clamp(walking.Player.Value), Walking.Clamp(walking.Robot.Value), Walking.Clamp(walking.Survivor.Value));
+
     /// <summary>Work the game times outside its action table; 1 leaves the game's timing exactly as it is.</summary>
-    private KindSpeed BindKind(string key, string work, string workChinese, Action<string> log)
-    {
-        var speed = KindSpeed.From(Config.Bind("Speed", key, 1f,
+    private ConfigEntry<float> BindKind(string key, string work, string workChinese) =>
+        Config.Bind("Speed", key, 1f,
             $"Speed of {work}. {ActionRange} 0 or less counts as 1.\n" +
-            $"{workChinese}的速度。{ActionRangeChinese}0 或更小按 1 计算。").Value);
+            $"{workChinese}的速度。{ActionRangeChinese}0 或更小按 1 计算。");
+
+    private static KindSpeed ReadKind(string key, float value, Action<string> log)
+    {
+        var speed = KindSpeed.From(value);
         var complaint = KindSpeeds.Complaint($"Speed/{key}", speed);
 
         if (complaint != null) log(complaint);
@@ -154,4 +183,11 @@ public sealed class Plugin : BasePlugin
 
         return $"{summary}, {settings.Overrides.Count} overrides, full benefits {(settings.FullBenefits ? "on" : "off")}";
     }
+
+    private sealed record ActionEntries(IReadOnlyList<(int Type, ConfigEntry<float> Speed)> Speeds, ConfigEntry<bool> FullBenefits, ConfigEntry<string> Overrides)
+    {
+        public IEnumerable<ConfigEntryBase> All => Speeds.Select(ConfigEntryBase (pair) => pair.Speed).Append(FullBenefits).Append(Overrides);
+    }
+
+    private sealed record WalkEntries(ConfigEntry<float> Player, ConfigEntry<float> Robot, ConfigEntry<float> Survivor);
 }

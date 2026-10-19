@@ -14,7 +14,6 @@ namespace ActionSpeed.Adapters;
 /// </summary>
 internal sealed class ActionWriter
 {
-    private readonly SpeedSettings _settings;
     private readonly string _listPath;
     private readonly Action<string> _log;
     private readonly Action<IReadOnlyDictionary<int, float>> _publishClocks;
@@ -24,22 +23,35 @@ internal sealed class ActionWriter
     private readonly Dictionary<int, float> _gameDuring = new();
 
     private Dictionary<int, float> _planned = new();
+    private SpeedSettings? _settings;
+    private bool _isReopenFree;
 
-    public ActionWriter(SpeedSettings settings, string listPath, Action<string> log, Action<IReadOnlyDictionary<int, float>> publishClocks, Action<IReadOnlySet<int>> publishSearches)
+    public ActionWriter(string listPath, Action<string> log, Action<IReadOnlyDictionary<int, float>> publishClocks, Action<IReadOnlySet<int>> publishSearches)
     {
-        _settings = settings;
         _listPath = listPath;
         _log = log;
         _publishClocks = publishClocks;
         _publishSearches = publishSearches;
     }
 
+    /// <summary>
+    /// Called on the main thread at start and after each change. The next sweep plans every action again from the
+    /// game's own durations and writes the new ones; an action already running keeps the length it started with.
+    /// </summary>
+    public void Use(SpeedSettings settings, bool isReopenFree)
+    {
+        _settings = settings;
+        _isReopenFree = isReopenFree;
+        _planned = new Dictionary<int, float>();
+    }
+
     public void Sweep()
     {
+        var settings = _settings;
         var config = BaseSingleton<ConfigManager>.IsInstanceCreated ? BaseSingleton<ConfigManager>.Instance : null;
         var actions = config?._Config_Action_Dict;
 
-        if (actions == null || actions.Count == 0) return;
+        if (settings == null || actions == null || actions.Count == 0) return;
 
         var rows = new List<Config_Action>(actions.Count);
 
@@ -50,7 +62,7 @@ internal sealed class ActionWriter
 
         var hasNewActions = rows.Any(action => !_planned.ContainsKey(action.ID));
 
-        if (hasNewActions) Plan(rows);
+        if (hasNewActions) Plan(rows, settings);
 
         var written = rows.Count(Write);
 
@@ -58,15 +70,15 @@ internal sealed class ActionWriter
         if (written > 0 && !hasNewActions) _log($"the game reloaded its action table, {written} durations written again");
     }
 
-    private void Plan(List<Config_Action> rows)
+    private void Plan(List<Config_Action> rows, SpeedSettings settings)
     {
         var isFirstPlan = _planned.Count == 0;
-        var decided = rows.Select(GameRow).Select(row => (Row: row, Decision: ActionSpeeds.Decide(row, _settings))).ToList();
+        var decided = rows.Select(GameRow).Select(row => (Row: row, Decision: ActionSpeeds.Decide(row, settings))).ToList();
         var changed = decided.Count(pair => pair.Decision.Lasts != pair.Row.GameDuring);
 
         _planned = decided.ToDictionary(pair => pair.Row.Id, pair => pair.Decision.During);
         _publishClocks(decided.Where(pair => pair.Decision.Clock != 1f).ToDictionary(pair => pair.Row.Id, pair => pair.Decision.Clock));
-        _publishSearches(rows.Where(action => EffectClock.IsSearch(action.EffectConfigID, _gameDuring[action.ID])).Select(action => action.ID).ToHashSet());
+        _publishSearches(_isReopenFree ? rows.Where(action => EffectClock.IsSearch(action.EffectConfigID, _gameDuring[action.ID])).Select(action => action.ID).ToHashSet() : new HashSet<int>());
         WriteList(decided.Select(pair => ActionSpeeds.Describe(pair.Row, pair.Decision, TypeName(pair.Row.Type))));
 
         _log(isFirstPlan

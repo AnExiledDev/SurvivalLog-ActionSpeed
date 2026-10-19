@@ -16,42 +16,66 @@ namespace ActionSpeed.Adapters;
 internal static class CraftPatch
 {
     private static KindSpeed _speed = KindSpeed.GamePace;
+    private static Harmony? _harmony;
+    private static Action<string> _log = _ => { };
+    private static bool _isHooked;
     private static HookFailures _failures = new(_ => { }, "");
     private static Action<string> _logFileOnly = _ => { };
     private static CraftBar _bar = new(KindSpeed.GamePace);
     private static bool _hasLoggedFirstCraft;
     private static bool _hasLoggedFirstBar;
 
-    /// <summary>At the game's pace nothing is hooked, which is what keeps the default timing exactly the game's.</summary>
-    public static void Apply(Harmony harmony, KindSpeed speed, Action<string> log, Action<string> logFileOnly)
+    /// <summary>Nothing is hooked until <see cref="Use"/> is given a speed that is not the game's pace.</summary>
+    public static void Apply(Harmony harmony, Action<string> log, Action<string> logFileOnly)
     {
+        _harmony = harmony;
+        _log = log;
+        _failures = new HookFailures(log, "shortening a craft");
+        _logFileOnly = logFileOnly;
+    }
+
+    /// <summary>
+    /// Called on the main thread at start and after each change; crafts started after it go at the new speed. The hooks
+    /// go in the first time the speed is not the game's pace, which is what keeps the default timing exactly the game's;
+    /// once in, at the game's pace they leave the craft and its bar as the game set them.
+    /// </summary>
+    public static void Use(KindSpeed speed)
+    {
+        _speed = speed;
+        _bar = new CraftBar(speed);
+
         if (speed.IsGamePace)
         {
-            log("crafting left at the game's pace");
+            _log("crafting left at the game's pace");
 
             return;
         }
 
-        _speed = speed;
-        _failures = new HookFailures(log, "shortening a craft");
-        _logFileOnly = logFileOnly;
-        _bar = new CraftBar(speed);
+        if (!_isHooked && !Hook()) return;
+
+        _log($"crafting x{speed.Speed:0.##}");
+    }
+
+    private static bool Hook()
+    {
+        if (_harmony == null) return false;
 
         try
         {
             var target = AccessTools.Method(typeof(ToolTableManager), nameof(ToolTableManager.StartProduction))
                          ?? throw new MissingMethodException("ToolTableManager.StartProduction");
 
-            harmony.Patch(target, prefix: new HarmonyMethod(typeof(CraftPatch), nameof(Remember)), postfix: new HarmonyMethod(typeof(CraftPatch), nameof(Shorten)),
+            _harmony.Patch(target, prefix: new HarmonyMethod(typeof(CraftPatch), nameof(Remember)), postfix: new HarmonyMethod(typeof(CraftPatch), nameof(Shorten)),
                 finalizer: new HarmonyMethod(typeof(CraftPatch), nameof(EndStart)));
-            log($"crafting x{speed.Speed:0.##}");
         }
         catch (Exception ex)
         {
-            log($"could not hook crafting, it stays at the game's pace: {ex.Message}");
+            _log($"could not hook crafting, it stays at the game's pace: {ex.Message}");
 
-            return;
+            return false;
         }
+
+        _isHooked = true;
 
         try
         {
@@ -59,12 +83,14 @@ internal static class CraftPatch
             var target = AccessTools.Method(typeof(Reducer_Web_ToolTable), nameof(Reducer_Web_ToolTable.Trigger_RA_CheckResult))
                          ?? throw new MissingMethodException("Reducer_Web_ToolTable.Trigger_RA_CheckResult");
 
-            harmony.Patch(target, prefix: new HarmonyMethod(typeof(CraftPatch), nameof(ShowShortened)));
+            _harmony.Patch(target, prefix: new HarmonyMethod(typeof(CraftPatch), nameof(ShowShortened)));
         }
         catch (Exception ex)
         {
-            log($"could not hook the workbench progress bar, it fills at the game's pace: {ex.Message}");
+            _log($"could not hook the workbench progress bar, it fills at the game's pace: {ex.Message}");
         }
+
+        return true;
     }
 
     /// <summary>The bench before a start request; null when it could not be read, which leaves the craft alone.</summary>

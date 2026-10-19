@@ -14,7 +14,7 @@ In Survival Log every action costs game time: eating, using furniture, treating 
 - **Walking speed**: you (the character you control), the robot and other people at your base each have a walking speed, 1.5 times as fast by default. Enemies always walk at the game's speed. The walk animation keeps up with the faster walk.
 - **Crafting speed**: crafting at a workbench is timed apart from other actions, so it has its own speed. It defaults to 1, the game's pace, and at 1 the mod does not touch crafting at all. Brewing and cooking speeds are in the Machine Speed mod.
 - **Keeps up with the game**: if the game reloads its action table, the mod notices within a few seconds and writes its times back.
-- **Log file**: what the mod set up at startup, and the first craft, walk, sped-up action effect and free second search it changed, go to `BepInEx\action-speed.log`.
+- **Log file**: what the mod set up at startup and after each change of a setting, and the first craft, walk, sped-up action effect and free second search it changed, go to `BepInEx\action-speed.log`.
 
 Action Speed changes how much game time actions take. It writes no data of its own into your save, and it does not edit game files. It does change your game's time: with it on, you get more done in a day, and anything you save reflects that. The shortened length of a craft in progress is held by that craft, so it can end up in your save. You can remove the mod at any time; actions started after that take the game's own time again.
 
@@ -52,12 +52,14 @@ Crafting is set when each craft starts.
 
 - Survival Log 1.1.18902. Built for this version; a game update can break it until the mod is updated.
 - The [BepInEx Pack for Survival Log](https://www.nexusmods.com/survivallog/mods/12), the BepInEx 6 (IL2CPP) build for the game.
+- [Exiled's Toolkit](https://github.com/AnExiledDev/SurvivalLog-ExiledToolkit) 0.4.0 or newer, which applies changed settings at once. Action Speed does not load without it.
 
 ## Install
 
 1. Install the [BepInEx Pack for Survival Log](https://www.nexusmods.com/survivallog/mods/12) (if no other mods were installed before, start the game once so BepInEx finishes setup, then quit).
-2. Download `ActionSpeed-x.y.z.zip` from the [latest release](https://github.com/AnExiledDev/SurvivalLog-ActionSpeed/releases/latest) or from [Nexus Mods](https://www.nexusmods.com/survivallog/mods/53).
-3. Extract the zip into the game folder (the folder with `SurvivalLog.exe`). It holds a `BepInEx` folder, so the DLL lands in the right place. When asked, merge the folders. The result should be:
+2. Install Exiled's Toolkit: download `ExiledToolkit-x.y.z.zip` from [its latest release](https://github.com/AnExiledDev/SurvivalLog-ExiledToolkit/releases/latest) or from Nexus Mods, and extract it into the game folder (the folder with `SurvivalLog.exe`).
+3. Download `ActionSpeed-x.y.z.zip` from the [latest release](https://github.com/AnExiledDev/SurvivalLog-ActionSpeed/releases/latest) or from [Nexus Mods](https://www.nexusmods.com/survivallog/mods/53).
+4. Extract the zip into the game folder (the folder with `SurvivalLog.exe`). It holds a `BepInEx` folder, so the DLL lands in the right place. When asked, merge the folders. The result should be:
    `C:\Program Files (x86)\Steam\steamapps\common\Survival Log\BepInEx\plugins\ActionSpeed.dll`
 
 ## Uninstall
@@ -66,13 +68,13 @@ Delete `ActionSpeed.dll` from the `BepInEx\plugins` folder. For a clean slate, a
 
 ## Configuration
 
-Settings live in `BepInEx\config\com.dev.survivallog.actionspeed.cfg`, created the first time the game starts with the mod. Edit it while the game is closed; changes apply at the next game start. See [CONFIG.md](CONFIG.md) for every setting. The mod has no hotkeys.
+Settings live in `BepInEx\config\com.dev.survivallog.actionspeed.cfg`, created the first time the game starts with the mod. Change them in game on the Mod Manager's Mods screen, where they take effect at once, or edit the file while the game is closed. See [CONFIG.md](CONFIG.md) for every setting. The mod has no hotkeys.
 
 ## Troubleshooting
 
 Built for Survival Log 1.1.18902 with BepInEx `6.0.0-be.788`.
 
-Check `BepInEx\LogOutput.log` for `===== Action Speed 0.5.0 started:`. The rest of that line lists the speeds in use, for example `full benefits on, free second search on, walking x1.5 (robot x1.5, survivors x1.5), crafting x1` at the end. Lines below it say what was hooked, such as `full benefits on, sped-up actions give everything they give at the game's pace`, `progress bars of sped-up actions fill with the action`, `walking speed x1.5 for you, x1.5 for the robot, x1.5 for survivors` and `crafting left at the game's pace`. A line starting `could not hook` means a game update has changed that part of the game, and it stays at the game's pace until the mod is updated.
+Check `BepInEx\LogOutput.log` for `===== Action Speed 0.6.0 started`. The line after it lists the action speeds in use, ending for example `full benefits on, free second search on`. Lines below it say what was hooked, such as `full benefits on, sped-up actions give everything they give at the game's pace`, `progress bars of sped-up actions fill with the action`, `walking speed x1.5 for you, x1.5 for the robot, x1.5 for survivors` and `crafting left at the game's pace`. A setting changed on the Mods screen writes its lines again. A line starting `could not hook` means a game update has changed that part of the game, and it stays at the game's pace until the mod is updated.
 
 Once the game has loaded its tables, look for `N of M actions changed, every action is listed in action-speed-actions.txt`.
 

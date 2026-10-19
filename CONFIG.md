@@ -1,6 +1,6 @@
 # Action Speed settings
 
-Settings live in `BepInEx\config\com.dev.survivallog.actionspeed.cfg`, created the first time the game starts with the mod. Edit the file while the game is closed; changes apply at the next game start. Delete the file to get the defaults back. Each setting in the file says what it does, in English and Chinese.
+Settings live in `BepInEx\config\com.dev.survivallog.actionspeed.cfg`, created the first time the game starts with the mod. Change them in game on the Mod Manager's Mods screen, where they take effect at once, or edit the file while the game is closed. Delete the file to get the defaults back. Each setting in the file says what it does, in English and Chinese.
 
 A speed of 1 is always the game's own pace. 2 takes half the game time, 4 takes a quarter, 0.5 takes twice as long. What `0` does is different in each section, so it is noted under each table.
 
@@ -39,7 +39,7 @@ Type speeds and override speeds are held between 0.25 and 20. A value below 0.25
 What 0 does here:
 
 - A type speed of `0` (or a negative number) is raised to 0.25, which makes that type take four times as long. To leave a type at the game's pace, write `1`.
-- An override with a speed of `0` or less, or an entry that is not `id:speed`, is skipped. The log says `ignored override '<entry>', write it as id:speed with a speed above 0` at startup.
+- An override with a speed of `0` or less, or an entry that is not `id:speed`, is skipped. The log says `ignored override '<entry>', write it as id:speed with a speed above 0` at startup and whenever an action setting changes.
 - An override of `1` puts that one action back at the game's pace even when its type is sped up.
 
 ## Walking
@@ -60,8 +60,8 @@ Crafting is timed apart from the action table, so it has its own speed here. At 
 | --- | --- | --- |
 | `Crafting` | `1` | Speed of crafting at a workbench. 2 halves the time a craft takes. |
 
-It is held between 0.25 and 20. A value outside that range is pulled to the nearest end, and the log says so at startup, for example `Speed/Crafting = 50 is outside 0.25 to 20, using 20`.
+It is held between 0.25 and 20. A value outside that range is pulled to the nearest end, and the log says so at startup and when the setting changes, for example `Speed/Crafting = 50 is outside 0.25 to 20, using 20`.
 
-What 0 does here: `0` or a negative number counts as 1, the game's pace, and the log says so at startup, for example `Speed/Crafting = 0 is not a speed above 0, using the game's pace (1)`.
+What 0 does here: `0` or a negative number counts as 1, the game's pace, and the log says so at startup and when the setting changes, for example `Speed/Crafting = 0 is not a speed above 0, using the game's pace (1)`.
 
-A craft keeps the length it had when it started, so a change here only affects ones started after the next game start.
+A craft keeps the length it had when it started, so a change here only affects crafts started after it.

@@ -21,35 +21,61 @@ internal static class WalkPatch
     private static readonly HashSet<Walker> FirstWalksLogged = new();
 
     private static WalkSpeeds _speeds = new(1f, 1f, 1f);
+    private static Harmony? _harmony;
+    private static bool _isHooked;
     private static Action<string> _log = _ => { };
     private static Action<string> _logFileOnly = _ => { };
     private static int _failures;
 
-    public static void Apply(Harmony harmony, WalkSpeeds speeds, Action<string> log, Action<string> logFileOnly)
+    /// <summary>Nothing is hooked until <see cref="Use"/> is given a speed that is not the game's.</summary>
+    public static void Apply(Harmony harmony, Action<string> log, Action<string> logFileOnly)
     {
-        _speeds = speeds;
+        _harmony = harmony;
         _log = log;
         _logFileOnly = logFileOnly;
+    }
+
+    /// <summary>
+    /// Called on the main thread at start and after each change; walks started after it go at the new speeds. The hook
+    /// goes in the first time a speed is not the game's, and at the game's speed it leaves every walk alone.
+    /// </summary>
+    public static void Use(WalkSpeeds speeds)
+    {
+        _speeds = speeds;
 
         if (speeds.IsGamePace)
         {
-            log("walking speed left at the game's");
+            _log("walking speed left at the game's");
 
             return;
         }
+
+        if (!_isHooked && !Hook()) return;
+
+        _log($"walking speed x{speeds.Player:0.##} for you, x{speeds.Robot:0.##} for the robot, x{speeds.Survivor:0.##} for survivors");
+    }
+
+    private static bool Hook()
+    {
+        if (_harmony == null) return false;
 
         try
         {
             var target = AccessTools.Method(typeof(AttributeComponent), nameof(AttributeComponent.GetTotalValue_Float), new[] { typeof(AttrName), typeof(AttrName) })
                          ?? throw new MissingMethodException("AttributeComponent.GetTotalValue_Float(AttrName, AttrName)");
 
-            harmony.Patch(target, postfix: new HarmonyMethod(typeof(WalkPatch), nameof(ScaleWalk)));
-            log($"walking speed x{speeds.Player:0.##} for you, x{speeds.Robot:0.##} for the robot, x{speeds.Survivor:0.##} for survivors");
+            _harmony.Patch(target, postfix: new HarmonyMethod(typeof(WalkPatch), nameof(ScaleWalk)));
         }
         catch (Exception ex)
         {
-            log($"could not hook walking speed, it stays at the game's: {ex.Message}");
+            _log($"could not hook walking speed, it stays at the game's: {ex.Message}");
+
+            return false;
         }
+
+        _isHooked = true;
+
+        return true;
     }
 
     /// <summary>Runs inside the game's own call; an escaping exception would reach native code.</summary>

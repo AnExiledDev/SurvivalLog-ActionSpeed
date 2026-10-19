@@ -18,45 +18,67 @@ internal static class EffectClockPatch
 {
     private static readonly EffectClock Clock = new();
 
+    private static Harmony? _harmony;
+    private static Action<string> _log = _ => { };
+    private static bool _isHooked;
     private static HookFailures _failures = new(_ => { }, "");
     private static Action<string> _logFileOnly = _ => { };
     private static bool _hasLoggedFirstEffect;
     private static bool _hasLoggedFirstReopen;
 
-    /// <summary>
-    /// Nothing is hooked unless some action runs its effect faster or slower, or a second search is free, which keeps
-    /// every effect on the game's clock.
-    /// </summary>
-    public static void Apply(Harmony harmony, SpeedSettings settings, bool isReopenFree, Action<string> log, Action<string> logFileOnly)
+    /// <summary>Nothing is hooked until <see cref="Use"/> is given settings that need it.</summary>
+    public static void Apply(Harmony harmony, Action<string> log, Action<string> logFileOnly)
     {
-        if (!ActionSpeeds.NeedsClock(settings) && !isReopenFree)
+        _harmony = harmony;
+        _log = log;
+        _failures = new HookFailures(log, "running an action's effect faster");
+        _logFileOnly = logFileOnly;
+    }
+
+    /// <summary>
+    /// Called on the main thread at start and after each change. The hook goes in the first time some action runs its
+    /// effect faster or slower, or a second search is free, which keeps every effect on the game's clock until then;
+    /// once in, it leaves effects on the game's clock alone.
+    /// </summary>
+    public static void Use(SpeedSettings settings, bool isReopenFree)
+    {
+        var needsClock = ActionSpeeds.NeedsClock(settings);
+
+        if (!needsClock && !isReopenFree)
         {
-            log(settings.FullBenefits ? "every action effect runs on the game's clock" : "full benefits off, sped-up actions end early and give less");
+            _log(settings.FullBenefits ? "every action effect runs on the game's clock" : "full benefits off, sped-up actions end early and give less");
 
             return;
         }
 
-        _failures = new HookFailures(log, "running an action's effect faster");
-        _logFileOnly = logFileOnly;
+        if (!_isHooked && !Hook()) return;
+
+        _log(needsClock ? "full benefits on, sped-up actions give everything they give at the game's pace" : "action effects hooked for free second searches only");
+    }
+
+    private static bool Hook()
+    {
+        if (_harmony == null) return false;
 
         try
         {
             var target = AccessTools.Method(typeof(BTEffectManager), nameof(BTEffectManager.UpdateNode), new[] { typeof(BtConfig), typeof(EffectBtArgs), typeof(float), typeof(float) })
                          ?? throw new MissingMethodException("BTEffectManager.UpdateNode(BtConfig, EffectBtArgs, float, float)");
 
-            harmony.Patch(target, prefix: new HarmonyMethod(typeof(EffectClockPatch), nameof(RunFaster)));
-            log(ActionSpeeds.NeedsClock(settings)
-                ? "full benefits on, sped-up actions give everything they give at the game's pace"
-                : "action effects hooked for free second searches only");
+            _harmony.Patch(target, prefix: new HarmonyMethod(typeof(EffectClockPatch), nameof(RunFaster)));
         }
         catch (Exception ex)
         {
-            log($"could not hook action effects, sped-up actions keep the game's duration: {ex.Message}");
+            _log($"could not hook action effects, sped-up actions keep the game's duration: {ex.Message}");
 
-            return;
+            return false;
         }
 
-        PatchProgressBar(harmony, log);
+        _isHooked = true;
+
+        PatchProgressBar(_harmony, _log);
+
+        return true;
     }
 
     private static void PatchProgressBar(Harmony harmony, Action<string> log)
