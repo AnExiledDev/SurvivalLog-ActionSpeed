@@ -1,0 +1,4 @@
+# Game versions each version of Action Speed is known to work on.
+# mod version = game versions, separated by commas
+0.7.0 = 1.1.19131
+0.7.1 = 1.1.19131
