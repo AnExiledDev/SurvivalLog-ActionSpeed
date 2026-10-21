@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.0
+
+- New `Reading` setting: one speed for reading books, magazines, newspapers, notes and letters, whatever their action type. It is 0 (off) by default, so reading keeps its type's speed until you set it. An override for a single action still beats it.
+- Marked for game version 1.1.19131.
+
 ## 0.6.0
 
 - The Mods screen links this changelog.

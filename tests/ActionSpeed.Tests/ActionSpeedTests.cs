@@ -181,6 +181,82 @@ public class OverrideTests
     }
 }
 
+public class ReadingTests
+{
+    private const int Food = 1;
+    private const int Entertainment = 3;
+
+    private static readonly ActionRow Novel = new(100003001, "read mystery novel", Entertainment, 2400f, IsReading: true);
+    private static readonly ActionRow Newspaper = new(100002506, "read newspaper", Food, 600f, IsReading: true);
+    private static readonly ActionRow Music = new(30, "listen to music", Entertainment, 2400f);
+
+    private static SpeedSettings Settings(float? reading, Dictionary<int, float>? overrides = null, bool fullBenefits = false) =>
+        new(new Dictionary<int, float> { [Food] = 2f, [Entertainment] = 1f }, overrides ?? new Dictionary<int, float>(), fullBenefits, reading);
+
+    [Fact]
+    public void The_reading_speed_shortens_every_reading_action_whatever_its_type()
+    {
+        Assert.Equal(new ActionDecision(240f, 1f, Reason.Reading), ActionSpeeds.Decide(Novel, Settings(reading: 10f)));
+        Assert.Equal(new ActionDecision(60f, 1f, Reason.Reading), ActionSpeeds.Decide(Newspaper, Settings(reading: 10f)));
+    }
+
+    [Fact]
+    public void The_reading_speed_leaves_other_actions_of_the_same_type_alone()
+    {
+        Assert.Equal(new ActionDecision(2400f, 1f, Reason.GameSpeed), ActionSpeeds.Decide(Music, Settings(reading: 10f)));
+    }
+
+    [Fact]
+    public void With_no_reading_speed_reading_follows_its_type()
+    {
+        Assert.Equal(new ActionDecision(300f, 1f, Reason.Changed), ActionSpeeds.Decide(Newspaper, Settings(reading: null)));
+    }
+
+    [Fact]
+    public void An_override_beats_the_reading_speed()
+    {
+        var overrides = new Dictionary<int, float> { [Novel.Id] = 4f };
+
+        Assert.Equal(new ActionDecision(600f, 1f, Reason.Overridden), ActionSpeeds.Decide(Novel, Settings(reading: 10f, overrides)));
+    }
+
+    [Fact]
+    public void With_full_benefits_a_fast_read_runs_its_effect_faster_instead_of_cutting_it_short()
+    {
+        var settings = Settings(reading: 10f, fullBenefits: true);
+
+        Assert.Equal(new ActionDecision(2400f, 10f, Reason.Reading), ActionSpeeds.Decide(Novel, settings));
+        Assert.True(ActionSpeeds.NeedsClock(settings));
+    }
+
+    [Theory]
+    [InlineData(0f)]
+    [InlineData(-3f)]
+    [InlineData(float.NaN)]
+    public void A_reading_setting_of_zero_or_less_leaves_reading_to_its_type(float configured)
+    {
+        Assert.Null(ActionSpeeds.ReadingSpeed(configured));
+    }
+
+    [Fact]
+    public void A_reading_setting_above_the_range_is_pulled_to_the_fastest()
+    {
+        Assert.Equal(ActionSpeeds.Fastest, ActionSpeeds.ReadingSpeed(500f));
+    }
+
+    [Theory]
+    [InlineData(21, "", true)]
+    [InlineData(2, "event:/Model/Human/kanshu", true)]
+    [InlineData(21, null, true)]
+    [InlineData(0, "event:/UI/kanbaozhi", true)]
+    [InlineData(2, "event:/Model/Human/eat", false)]
+    [InlineData(42, null, false)]
+    public void An_action_is_reading_when_the_game_plays_its_reading_animation_or_sound(int show, string? sound, bool isReading)
+    {
+        Assert.Equal(isReading, ActionSpeeds.IsReading(show, sound));
+    }
+}
+
 public class DescribeTests
 {
     [Fact]

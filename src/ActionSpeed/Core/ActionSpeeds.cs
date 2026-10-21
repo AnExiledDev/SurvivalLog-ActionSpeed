@@ -8,12 +8,14 @@ namespace ActionSpeed.Core;
 /// <summary>One action as the game's table defines it, before this mod wrote over it.</summary>
 /// <param name="Type">The game's ActionType, 0 for furniture use (the game leaves that bucket unnamed).</param>
 /// <param name="GameDuring">Game seconds the action takes; 0 or less marks an action timed by something else.</param>
-public readonly record struct ActionRow(int Id, string Name, int Type, float GameDuring);
+/// <param name="IsReading">The game plays its reading animation or sound for it: books, magazines, newspapers, notes and letters.</param>
+public readonly record struct ActionRow(int Id, string Name, int Type, float GameDuring, bool IsReading = false);
 
 public enum Reason
 {
     Changed,
     Overridden,
+    Reading,
     GameSpeed,
     TimedElsewhere,
 }
@@ -31,7 +33,8 @@ public readonly record struct ActionDecision(float During, float Clock, Reason R
 /// <param name="Overrides">Speed per action id, which beats the type's speed.</param>
 /// <param name="FullBenefits">A sped-up action gives everything it gives at the game's pace, by running its effect
 /// faster; off, it is cut short and pays out only for the shorter time.</param>
-public sealed record SpeedSettings(IReadOnlyDictionary<int, float> SpeedByType, IReadOnlyDictionary<int, float> Overrides, bool FullBenefits);
+/// <param name="ReadingSpeed">Speed for every reading action, which beats the type's speed; null leaves reading to its type.</param>
+public sealed record SpeedSettings(IReadOnlyDictionary<int, float> SpeedByType, IReadOnlyDictionary<int, float> Overrides, bool FullBenefits, float? ReadingSpeed = null);
 
 public sealed record ParsedOverrides(IReadOnlyDictionary<int, float> Speeds, IReadOnlyList<string> Rejected);
 
@@ -41,13 +44,16 @@ public static class ActionSpeeds
     public const float Fastest = 20f;
 
     private const float SecondsPerMinute = 60f;
+    private const int ReadBookAnimation = 21;
+
+    private static readonly string[] ReadingSounds = { "/kanshu", "/kanbaozhi" };
 
     /// <summary>A speed that is not a number means nothing was meant, so the action keeps the game's speed.</summary>
     public static float Clamp(float speed) => float.IsFinite(speed) ? Math.Clamp(speed, Slowest, Fastest) : 1f;
 
     /// <summary>
-    /// How an action runs at its speed. An override is the player naming one action, so it beats the type's speed;
-    /// an action timed by something else has no duration here to scale. With full benefits the table keeps the
+    /// How an action runs at its speed. An override is the player naming one action, so it beats the reading speed,
+    /// which in turn beats the type's speed, because reading is spread over several types; an action timed by something else has no duration here to scale. With full benefits the table keeps the
     /// game's duration and the effect's clock runs faster, so every payout and the end come sooner together; the
     /// table value is never divided as well, or the action would be cut short a second time.
     /// </summary>
@@ -57,6 +63,8 @@ public static class ActionSpeeds
 
         if (settings.Overrides.TryGetValue(row.Id, out var overridden)) return AtSpeed(row, overridden, settings.FullBenefits, Reason.Overridden);
 
+        if (row.IsReading && settings.ReadingSpeed is { } reading) return AtSpeed(row, reading, settings.FullBenefits, Reason.Reading);
+
         if (!settings.SpeedByType.TryGetValue(row.Type, out var speed) || speed == 1f) return new ActionDecision(row.GameDuring, 1f, Reason.GameSpeed);
 
         return AtSpeed(row, speed, settings.FullBenefits, Reason.Changed);
@@ -64,7 +72,17 @@ public static class ActionSpeeds
 
     /// <summary>Whether any action could run its effect on a faster or slower clock, which is when the clock needs hooking.</summary>
     public static bool NeedsClock(SpeedSettings settings) =>
-        settings.FullBenefits && settings.SpeedByType.Values.Concat(settings.Overrides.Values).Any(speed => speed != 1f);
+        settings.FullBenefits && settings.SpeedByType.Values.Concat(settings.Overrides.Values).Append(settings.ReadingSpeed ?? 1f).Any(speed => speed != 1f);
+
+    /// <summary>The reading setting: 0 or less, or not a number, leaves reading to its action type's speed.</summary>
+    public static float? ReadingSpeed(float configured) => float.IsFinite(configured) && configured > 0f ? Clamp(configured) : null;
+
+    /// <summary>
+    /// Whether an action is reading, by what the game shows for it: its reading animation (Config_Show
+    /// Armature_ReadBook) or its page-turning or newspaper sound. Action names are text keys, so they cannot say.
+    /// </summary>
+    public static bool IsReading(int showConfigId, string? fmodPath) =>
+        showConfigId == ReadBookAnimation || (fmodPath != null && ReadingSounds.Any(fmodPath.EndsWith));
 
     /// <summary>Reads "id:speed" pairs; an entry that is not one is handed back so the player can be told.</summary>
     public static ParsedOverrides ParseOverrides(string text)

@@ -91,7 +91,7 @@ internal sealed class ActionWriter
     {
         if (!_gameDuring.TryGetValue(action.ID, out var gameDuring)) _gameDuring[action.ID] = gameDuring = action.During;
 
-        return new ActionRow(action.ID, DisplayName(action), action.ActionType, gameDuring);
+        return new ActionRow(action.ID, DisplayName(action), action.ActionType, gameDuring, ActionSpeeds.IsReading(action.ShowConfigID, action.FmodPath));
     }
 
     private bool Write(Config_Action action)

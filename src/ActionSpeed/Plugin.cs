@@ -17,7 +17,7 @@ namespace ActionSpeed;
 public sealed class Plugin : BasePlugin
 {
     private const string Guid = "com.dev.survivallog.actionspeed";
-    private const string Version = "0.6.0";
+    private const string Version = "0.7.0";
     private const string FurnitureUse = "FurnitureUse";
 
     private const string ActionRange = "From 0.25 to 20: 1 is the game's pace, 2 is twice as fast.";
@@ -126,7 +126,11 @@ public sealed class Plugin : BasePlugin
             "Speeds for single actions, written as id:speed and separated by commas; these beat the type speeds above. For example, 112:4 makes Use Toilet four times as fast. Every action and its id is listed in BepInEx\\action-speed-actions.txt.\n" +
             "单独设置某个动作的速度，格式为 id:速度，多个用英文逗号分隔，优先于上面的类型速度。例如 112:4 让坐下就开始……（上厕所）变为四倍速。所有动作及其 id 列在 BepInEx\\action-speed-actions.txt 中。");
 
-        return new ActionEntries(speeds, isFullBenefits, overrides);
+        var reading = Config.Bind("Actions", "Reading", 0f,
+            $"Speed of reading books, magazines, newspapers, notes and letters, whatever their type above. {ActionRange} 0 leaves reading at its type's speed.\n" +
+            $"阅读书籍、杂志、报纸、笔记和信件的速度，不论它们属于上面哪一类。{ActionRangeChinese}0 表示阅读按所属类型的速度。");
+
+        return new ActionEntries(speeds, isFullBenefits, overrides, reading);
     }
 
     private static SpeedSettings ReadActions(ActionEntries actions, Action<string> log)
@@ -136,7 +140,7 @@ public sealed class Plugin : BasePlugin
 
         foreach (var rejected in overrides.Rejected) log($"ignored override '{rejected}', write it as id:speed with a speed above 0");
 
-        return new SpeedSettings(speedByType, overrides.Speeds, actions.FullBenefits.Value);
+        return new SpeedSettings(speedByType, overrides.Speeds, actions.FullBenefits.Value, ActionSpeeds.ReadingSpeed(actions.Reading.Value));
     }
 
     private WalkEntries BindWalking()
@@ -182,12 +186,14 @@ public sealed class Plugin : BasePlugin
         var faster = settings.SpeedByType.Where(pair => pair.Value != 1f).Select(pair => $"{ActionWriter.TypeName(pair.Key)} x{pair.Value:0.##}").ToList();
         var summary = faster.Count == 0 ? "every action type at the game's pace" : string.Join(", ", faster);
 
-        return $"{summary}, {settings.Overrides.Count} overrides, full benefits {(settings.FullBenefits ? "on" : "off")}";
+        var reading = settings.ReadingSpeed is { } speed ? $", reading x{speed:0.##}" : "";
+
+        return $"{summary}{reading}, {settings.Overrides.Count} overrides, full benefits {(settings.FullBenefits ? "on" : "off")}";
     }
 
-    private sealed record ActionEntries(IReadOnlyList<(int Type, ConfigEntry<float> Speed)> Speeds, ConfigEntry<bool> FullBenefits, ConfigEntry<string> Overrides)
+    private sealed record ActionEntries(IReadOnlyList<(int Type, ConfigEntry<float> Speed)> Speeds, ConfigEntry<bool> FullBenefits, ConfigEntry<string> Overrides, ConfigEntry<float> Reading)
     {
-        public IEnumerable<ConfigEntryBase> All => Speeds.Select(ConfigEntryBase (pair) => pair.Speed).Append(FullBenefits).Append(Overrides);
+        public IEnumerable<ConfigEntryBase> All => Speeds.Select(ConfigEntryBase (pair) => pair.Speed).Append(FullBenefits).Append(Overrides).Append(Reading);
     }
 
     private sealed record WalkEntries(ConfigEntry<float> Player, ConfigEntry<float> Robot, ConfigEntry<float> Survivor);
