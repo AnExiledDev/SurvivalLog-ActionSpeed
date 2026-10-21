@@ -10,10 +10,10 @@ One speed per action type, plus four settings: one for reading, one for full ben
 
 | Setting | Default | What it does |
 | --- | --- | --- |
-| `FurnitureUse` | `2` | Speed of furniture actions, such as unpacking furniture packages, Take Apart Chime, Break Trinket, Deploy Rescue Beacon, Upgrade Gate and Try Cooking. |
-| `Food` | `2` | Speed of eating and drinking, such as Eat Cookies, Eat Burger, Drink Coffee, Enjoy Hot Pot and Eat Food. |
-| `Treatment` | `2` | Speed of taking medicine: Eat Vitamins and Take Meds. |
-| `Other` | `2` | Speed of everything else, such as Search, Harvest, Pry Open, Wash Hands, Use Toilet, Unlock Furniture, Planting, the timed "organize items" action (id 11) and short moments like Hungry... and Tired... |
+| `FurnitureUse` | `1` | Speed of furniture actions, such as unpacking furniture packages, Take Apart Chime, Break Trinket, Deploy Rescue Beacon, Upgrade Gate and Try Cooking. |
+| `Food` | `1` | Speed of eating and drinking, such as Eat Cookies, Eat Burger, Drink Coffee, Enjoy Hot Pot and Eat Food. |
+| `Treatment` | `1` | Speed of taking medicine: Eat Vitamins and Take Meds. |
+| `Other` | `1` | Speed of everything else, such as Search, Harvest, Pry Open, Wash Hands, Use Toilet, Unlock Furniture, Planting, the timed "organize items" action (id 11) and short moments like Hungry... and Tired... |
 | `Rest` | `1` | Speed of sleeping and resting, such as Sleep, Nap, Play Video Games, Have Fun and Disinfect. |
 | `Entertainment` | `1` | Speed of fun and relaxing, such as Listen to Music, Dance, Massage, Look in Mirror and Admire. |
 | `Exercise` | `1` | Speed of exercise and some chores, such as Work Out, Running, Do Push-ups, Manual Power Generation, Do Laundry, Clean and Take a Bath. |
@@ -24,7 +24,7 @@ One speed per action type, plus four settings: one for reading, one for full ben
 | `Reading` | `0` | Speed of reading books, magazines, newspapers, notes and letters, whatever their type. An action counts as reading when the game plays its reading animation or sound for it. `0` leaves reading at its type's speed. |
 | `FullBenefits` | `true` | When true, a sped-up action still gives its full effect: a faster sleep rests you as much as a normal one. When false, a sped-up action ends early and gives only what it gave in that shorter time. |
 | `Overrides` | empty | Speeds for single actions, written as `id:speed` and separated by commas, for example `112:4, 39:2`. An override beats its type's speed. `112:4` makes Use Toilet four times as fast. Every action and its id is listed in `BepInEx\action-speed-actions.txt`. |
-| `FreeSecondSearch` | `true` | When true, searching a container you have already searched opens it at once: no game time passes, so on an expedition it adds no exposure. When false, every search takes the game's time (or its type's or override's speed). |
+| `FreeSecondSearch` | `false` | When true, searching a container you have already searched opens it at once: no game time passes, so on an expedition it adds no exposure. When false, every search takes the game's time (or its type's or override's speed). |
 
 To find an action's id and type, open `BepInEx\action-speed-actions.txt`. The mod writes it once the game has loaded its tables. Each line reads `id | name | type | game clock -> with this mod | why`, with times in minutes of game time. When an action keeps its full benefits, its time ends in `, full benefits`. The last column is one of:
 
@@ -49,9 +49,9 @@ What 0 does here:
 
 | Setting | Default | What it does |
 | --- | --- | --- |
-| `Speed` | `1.5` | How fast you walk, meaning the character you control. |
-| `RobotSpeed` | `1.5` | How fast robots move. |
-| `SurvivorSpeed` | `1.5` | How fast other people at your base walk. Enemies always keep the game's speed. |
+| `Speed` | `1` | How fast you walk, meaning the character you control. |
+| `RobotSpeed` | `1` | How fast robots move. |
+| `SurvivorSpeed` | `1` | How fast other people at your base walk. Enemies always keep the game's speed. |
 
 1 is the game's speed and 2 is twice as fast. Each is held between 0.25 and 5. A value below 0.25 is raised to 0.25 and a value above 5 is lowered to 5. A `0` (or a negative number) is raised to 0.25, a quarter of the game's walking speed. When all three are exactly 1, the mod does not touch walking at all.
 

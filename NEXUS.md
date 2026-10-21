@@ -6,13 +6,13 @@ Short chores eat your day in Survival Log. Action Speed lets you choose how much
 
 [size=5]Main features[/size]
 [list]
-[*][b]Speed per action type[/b]: furniture use, food, treatment and other actions take half the game time by default. Every other type can be set too.[/*]
+[*][b]Speed per action type[/b]: every type of action gets its own speed. Everything starts at the game's pace; raise only what you want faster.[/*]
 [*][b]Full benefits[/b]: a sped-up action still gives everything it gives at the game's pace. Sleep twice as fast and you wake up just as rested. You can turn this off to cut sped-up actions short instead.[/*]
-[*][b]Free second search[/b]: searching a container you have already searched opens it at once, so it costs no time and, on an expedition, no exposure.[/*]
+[*][b]Free second search[/b]: searching a container you have already searched opens it at once, so it costs no time and, on an expedition, no exposure. Off by default.[/*]
 [*][b]Reading[/b]: one speed for every book, magazine, newspaper, note and letter. Off by default, so reading keeps its type's speed.[/*]
 [*][b]Single actions[/b]: set a speed for one action by its id.[/*]
 [*][b]Action list[/b]: every action with its old and new time is written to a text file.[/*]
-[*][b]Faster walking[/b]: you, the robot and your survivors each have a walking speed, 1.5 times as fast by default. Enemies keep the game's speed.[/*]
+[*][b]Faster walking[/b]: you, the robot and your survivors each have their own walking speed, the game's speed by default. Enemies keep the game's speed.[/*]
 [*][b]Crafting[/b]: its own speed. Off by default. Brewing and cooking speeds are in Machine Speed.[/*]
 [/list]
 Action Speed writes no data of its own into your save and does not edit game files. It does change how much game time things take, and your save reflects that. You can remove it at any time; actions started after that take the game's own time again.
@@ -59,13 +59,13 @@ Open source under MIT: [url=https://github.com/AnExiledDev/SurvivalLog-ActionSpe
 
 [size=5]主要功能[/size]
 [list]
-[*][b]按动作类型调速[/b]：家具类、吃喝、吃药和其他动作默认只花一半的游戏时间。其余类型也都可以单独设置。[/*]
+[*][b]按动作类型调速[/b]：每类动作都有自己的速度。默认全部为游戏原速，只需调快你想加快的。[/*]
 [*][b]效果不减[/b]：加速后的动作仍有和原速时一样的全部效果。睡觉快一倍，醒来照样休息得一样足。也可以关掉此项，让加速的动作直接提前结束。[/*]
-[*][b]搜过的不再花时间[/b]：再次搜寻已经搜过的容器会立即打开，不花时间，外出探索时也不会增加暴露值。[/*]
+[*][b]搜过的不再花时间[/b]：再次搜寻已经搜过的容器会立即打开，不花时间，外出探索时也不会增加暴露值。默认关闭。[/*]
 [*][b]阅读[/b]：所有书籍、杂志、报纸、笔记和信件共用一个速度。默认关闭，阅读按所属类型的速度。[/*]
 [*][b]单个动作[/b]：按 id 给某一个动作单独设置速度。[/*]
 [*][b]动作列表[/b]：每个动作原来和现在的时长都会写进一个文本文件。[/*]
-[*][b]走得更快[/b]：你、机器人和幸存者各有自己的行走速度，默认是原来的 1.5 倍。敌人保持游戏原速。[/*]
+[*][b]走得更快[/b]：你、机器人和幸存者各有自己的行走速度，默认为游戏原速。敌人保持游戏原速。[/*]
 [*][b]制造、酿酒和烹饪[/b]：各有独立的速度，默认不改动。[/*]
 [/list]
 Action Speed 不会往存档里写入自己的数据，也不会修改游戏文件。但它确实改变了各种事情花费的游戏时间，存档也会反映这一点。随时可以移除；移除后新开始的动作会恢复游戏原本的时长。

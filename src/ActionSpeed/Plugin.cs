@@ -25,9 +25,6 @@ public sealed class Plugin : BasePlugin
     private const string WalkRange = "From 0.25 to 5: 1 is the game's speed, 2 is twice as fast.";
     private const string WalkRangeChinese = "范围 0.25 到 5：1 为游戏原速，2 为两倍速。";
 
-    /// <summary>Short chores players ask to speed up; sleep, fun, workouts, quiet time and repairs keep the game's pace until set.</summary>
-    private static readonly Dictionary<string, float> DefaultSpeeds = new() { [FurnitureUse] = 2f, ["Food"] = 2f, ["Treatment"] = 2f, ["Other"] = 2f };
-
     /// <summary>What each action type covers, in the game's own action names, so the player can tell them apart.</summary>
     private static readonly Dictionary<string, (string English, string Chinese)> TypeCovers = new()
     {
@@ -75,7 +72,7 @@ public sealed class Plugin : BasePlugin
         log.TrimIfLarge();
 
         var actions = BindActions();
-        var isReopenFree = Config.Bind("Actions", "FreeSecondSearch", true,
+        var isReopenFree = Config.Bind("Actions", "FreeSecondSearch", false,
             "When true, searching a container you have already searched opens it at once: no time passes, so an expedition adds no exposure for it. When false, every search takes the game's time.\n" +
             "设为 true 时，搜寻已经搜过的容器会立即打开：不花时间，外出探索时也不会因此增加暴露值。设为 false 时，每次搜寻都按游戏原本的时间进行。");
         var walking = BindWalking();
@@ -111,10 +108,9 @@ public sealed class Plugin : BasePlugin
 
         foreach (var (type, name) in ActionTypes())
         {
-            var fallback = DefaultSpeeds.TryGetValue(name, out var preset) ? preset : 1f;
             (string English, string Chinese) covers = TypeCovers.TryGetValue(name, out var text) ? text : (English:$"Speed of {name} actions.", Chinese: $"{name} 类动作的速度。");
 
-            speeds.Add((type, Config.Bind("Actions", name, fallback,
+            speeds.Add((type, Config.Bind("Actions", name, 1f,
                 $"{covers.English} {ActionRange}\n" +
                 $"{covers.Chinese}{ActionRangeChinese}")));
         }
@@ -145,13 +141,13 @@ public sealed class Plugin : BasePlugin
 
     private WalkEntries BindWalking()
     {
-        var player = Config.Bind("Walking", "Speed", 1.5f,
+        var player = Config.Bind("Walking", "Speed", 1f,
             $"How fast you walk, meaning the character you control. {WalkRange}\n" +
             $"你的行走速度，也就是你操控的那个角色。{WalkRangeChinese}");
-        var robot = Config.Bind("Walking", "RobotSpeed", 1.5f,
+        var robot = Config.Bind("Walking", "RobotSpeed", 1f,
             $"How fast robots move. {WalkRange}\n" +
             $"机器人的移动速度。{WalkRangeChinese}");
-        var survivor = Config.Bind("Walking", "SurvivorSpeed", 1.5f,
+        var survivor = Config.Bind("Walking", "SurvivorSpeed", 1f,
             $"How fast other people at your base walk. Enemies always keep the game's speed. {WalkRange}\n" +
             $"基地里其他人的行走速度。敌人始终保持游戏原速。{WalkRangeChinese}");
 

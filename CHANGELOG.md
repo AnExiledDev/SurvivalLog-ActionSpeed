@@ -3,6 +3,7 @@
 ## 0.7.0
 
 - New `Reading` setting: one speed for reading books, magazines, newspapers, notes and letters, whatever their action type. It is 0 (off) by default, so reading keeps its type's speed until you set it. An override for a single action still beats it.
+- Every setting now starts at the game's own behavior, so nothing changes until you raise what you want: furniture use, food, treatment and other speeds go from 2 to 1, all three walking speeds from 1.5 to 1, and `FreeSecondSearch` from on to off. A config file you already have keeps its values; delete it to get the new defaults.
 - Marked for game version 1.1.19131.
 
 ## 0.6.0
