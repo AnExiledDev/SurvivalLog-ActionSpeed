@@ -1,8 +1,10 @@
 Name: Action Speed
-Summary: Makes everyday actions like eating, using furniture and treatment take less game time without giving less, lets you, the robot and your survivors walk faster, and can speed up crafting. 让吃饭、使用家具、吃药等日常动作花更少的游戏时间而效果不减，让你、机器人和幸存者走得更快，还能加快制造。
+Summary: Lets everyday actions like eating, using furniture and treatment take less game time without giving less, lets you, the robot and your survivors walk faster, and can speed up crafting. 让吃饭、使用家具、吃药等日常动作花更少的游戏时间而效果不减，让你、机器人和幸存者走得更快，还能加快制造。
 
 Description (BBCode):
 Short chores eat your day in Survival Log. Action Speed lets you choose how much game time each kind of action takes, and how fast you, the robot and other people at your base walk. Everything is set in one config file, and each setting there says what it covers.
+
+[b]New install? Nothing changes until you set it.[/b] Every setting starts at the game's own pace, so a fresh install plays exactly like the base game. Before you start playing, raise the speeds you want: on the Mod Manager's Mods screen, or in [i]BepInEx\config\com.dev.survivallog.actionspeed.cfg[/i] while the game is closed (the file appears after the game has started once with the mod). Already have a config file? It keeps your values.
 
 [size=5]Main features[/size]
 [list]
@@ -56,6 +58,8 @@ Open source under MIT: [url=https://github.com/AnExiledDev/SurvivalLog-ActionSpe
 [size=5]简体中文[/size]
 
 在 Survival Log 里，零碎的小事会把一天的时间吃光。Action Speed 让你自己决定每类动作要花多少游戏时间，以及你、机器人和基地里其他人走路有多快。所有设置都在一个配置文件里，每项设置都写明了它管哪些动作。
+
+[b]新安装？不设置就不会有任何变化。[/b]所有设置默认都是游戏原速，所以刚装好时和原版游戏完全一样。开始游玩前，请先调高你想加快的速度：可以在 Mod Manager 的「模组」界面里改，也可以在游戏关闭时编辑 [i]BepInEx\config\com.dev.survivallog.actionspeed.cfg[/i]（带着本模组启动过一次游戏后才会生成这个文件）。已经有配置文件？里面的数值会保留。
 
 [size=5]主要功能[/size]
 [list]

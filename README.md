@@ -70,7 +70,7 @@ Delete `ActionSpeed.dll` from the `BepInEx\plugins` folder. For a clean slate, a
 
 ## Configuration
 
-Settings live in `BepInEx\config\com.dev.survivallog.actionspeed.cfg`, created the first time the game starts with the mod. Change them in game on the Mod Manager's Mods screen, where they take effect at once, or edit the file while the game is closed. See [CONFIG.md](CONFIG.md) for every setting. The mod has no hotkeys. Without Exiled's Toolkit installed, changes made on the Mods screen take effect at the next game start instead.
+Settings live in `BepInEx\config\com.dev.survivallog.actionspeed.cfg`, created the first time the game starts with the mod. Change them in game on the Mod Manager's Mods screen, where they take effect at once, or edit the file while the game is closed. See [CONFIG.md](CONFIG.md) for every setting. Every setting starts at the game's own pace, so a new install changes nothing until you raise the speeds you want; set them before you start playing. The mod has no hotkeys. Without Exiled's Toolkit installed, changes made on the Mods screen take effect at the next game start instead.
 
 ## Troubleshooting
 
