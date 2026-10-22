@@ -104,11 +104,13 @@ public class EffectClockTests
         Assert.Equal(float.PositiveInfinity, EffectClock.LongestStep(timeScale: 0));
     }
 
-    private readonly record struct FakeEffect(bool IsActionEffect, float FullLife, float LifeLeft, long EffectId, int? OwnersAction, bool IsTargetSearched = false) : IRunningEffect
+    private readonly record struct FakeEffect(bool IsActionEffect, float FullLife, float LifeLeft, long EffectId, int? OwnersAction, bool IsTargetSearched = false, Character Who = Character.Player) : IRunningEffect
     {
         public int? OwnersActionId() => OwnersAction;
 
         public bool IsOwnersTargetSearched() => IsTargetSearched;
+
+        public Character Owner() => Who;
     }
 
     private const int Search = 1919;
@@ -154,7 +156,7 @@ public class EffectClockTests
     [Fact]
     public void The_bar_of_a_second_search_is_shortened_with_it()
     {
-        Assert.True(EffectClock.BarSeconds(60f, WithSearches().ClockOfAction(Search, () => true)) < 0.1f);
+        Assert.True(EffectClock.BarSeconds(60f, WithSearches().ClockOfAction(Search, () => true, () => Character.Player)) < 0.1f);
     }
 
     [Theory]
@@ -195,8 +197,8 @@ public class EffectClockTests
 
         clock.Publish(new Dictionary<int, float> { [7] = 3f });
 
-        Assert.Equal(3f, clock.ClockOfAction(7, () => false));
-        Assert.Equal(1f, clock.ClockOfAction(8, () => false));
-        Assert.Equal(1f, clock.ClockOfAction(null, () => false));
+        Assert.Equal(3f, clock.ClockOfAction(7, () => false, () => Character.Player));
+        Assert.Equal(1f, clock.ClockOfAction(8, () => false, () => Character.Player));
+        Assert.Equal(1f, clock.ClockOfAction(null, () => false, () => Character.Player));
     }
 }

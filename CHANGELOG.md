@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.0
+
+- New `[Work]` settings: `Speed` for you, `RobotSpeed` for robots and `SurvivorSpeed` for other people at your base. Each speeds up every action that character does, on top of the action's own speed, and the action still gives its full effect. All three start at 1, the game's pace.
+- New `[Speed]` `Travel` setting: how long trips between home and an expedition place take, going out and coming home. The map shows the new time. It starts at 1, the game's pace.
+
 ## 0.8.0
 
 - Action speeds are now set per kind of action instead of per game action type: 38 settings such as `Meals`, `Snacks`, `Drinks`, `Sleep`, `Nap`, `Reading`, `Toilet`, `Cleaning`, `Harvesting`, `Repairs`, `Searching` and `Traps`, in ten sections. Each section has an `All` setting for the whole section, and `Everything` in `[Actions]` sets every action at once. A setting at 0 follows the one above it.

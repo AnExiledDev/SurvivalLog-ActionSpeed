@@ -23,6 +23,9 @@ public interface IRunningEffect
 
     /// <summary>The owner's action is aimed at a container that has been searched before.</summary>
     bool IsOwnersTargetSearched();
+
+    /// <summary>Who started the effect: the player, the robot, a survivor or anyone else.</summary>
+    Character Owner();
 }
 
 /// <summary>
@@ -51,6 +54,7 @@ public sealed class EffectClock
 
     private IReadOnlyDictionary<int, float> _clockByAction = new Dictionary<int, float>();
     private IReadOnlySet<int> _searchActions = new HashSet<int>();
+    private CharacterSpeeds _workSpeeds = new(1f, 1f, 1f);
 
     /// <summary>The clock of every action that does not run on the game's.</summary>
     public void Publish(IReadOnlyDictionary<int, float> clockByAction) => _clockByAction = clockByAction;
@@ -60,6 +64,9 @@ public sealed class EffectClock
 
     /// <summary>The actions that search a container, which end at once when the container was searched before.</summary>
     public void PublishSearches(IReadOnlySet<int> searchActions) => _searchActions = searchActions;
+
+    /// <summary>How fast the player, the robot and survivors do every action, on top of the action's own speed.</summary>
+    public void PublishWorkSpeeds(CharacterSpeeds workSpeeds) => _workSpeeds = workSpeeds;
 
     /// <summary>Called every few seconds so effects that ended are forgotten.</summary>
     public void ForgetEnded() => _memo.Age();
@@ -71,7 +78,7 @@ public sealed class EffectClock
     /// </summary>
     public float ClockOf<TEffect>(TEffect effect) where TEffect : IRunningEffect
     {
-        if ((_clockByAction.Count == 0 && _searchActions.Count == 0) || !effect.IsActionEffect) return 1f;
+        if ((_clockByAction.Count == 0 && _searchActions.Count == 0 && _workSpeeds.IsGamePace) || !effect.IsActionEffect) return 1f;
 
         var fullLife = effect.FullLife;
 
@@ -82,7 +89,7 @@ public sealed class EffectClock
 
         if (_memo.TryRecall(effectId, isFresh, out var clock)) return clock;
 
-        clock = ClockOfAction(effect.OwnersActionId(), effect.IsOwnersTargetSearched);
+        clock = ClockOfAction(effect.OwnersActionId(), effect.IsOwnersTargetSearched, effect.Owner);
         _memo.Remember(effectId, clock);
 
         return clock;
@@ -117,16 +124,20 @@ public sealed class EffectClock
     public static float LongestStep(int timeScale) => timeScale > 0 ? ShortestPayoutGameSeconds / timeScale : float.PositiveInfinity;
 
     /// <summary>
-    /// The clock an action's effect runs on; 1 for an action that keeps the game's. Looking in a container a second
-    /// time finds nothing new, so it costs no time, and no exposure on an expedition.
+    /// The clock an action's effect runs on: the action's own speed times the speed of whoever does it, and 1 when
+    /// both keep the game's. Looking in a container a second time finds nothing new, so it costs no time, and no
+    /// exposure on an expedition.
     /// </summary>
     /// <param name="isTargetSearched">Asked only for a search, since it reads the game's memory.</param>
-    public float ClockOfAction(int? actionId, Func<bool> isTargetSearched)
+    /// <param name="owner">Asked only when someone works at other than the game's pace, for the same reason.</param>
+    public float ClockOfAction(int? actionId, Func<bool> isTargetSearched, Func<Character> owner)
     {
         if (actionId is not { } id) return 1f;
 
         if (_searchActions.Contains(id) && isTargetSearched()) return Instant;
 
-        return _clockByAction.TryGetValue(id, out var clock) ? clock : 1f;
+        var actionClock = _clockByAction.TryGetValue(id, out var clock) ? clock : 1f;
+
+        return _workSpeeds.IsGamePace ? actionClock : actionClock * Walking.SpeedFor(owner(), _workSpeeds);
     }
 }

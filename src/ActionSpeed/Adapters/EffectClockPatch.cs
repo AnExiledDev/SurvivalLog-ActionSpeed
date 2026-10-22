@@ -40,9 +40,9 @@ internal static class EffectClockPatch
     /// effect faster or slower, or a second search is free, which keeps every effect on the game's clock until then;
     /// once in, it leaves effects on the game's clock alone.
     /// </summary>
-    public static void Use(SpeedSettings settings, bool isReopenFree)
+    public static void Use(SpeedSettings settings, bool isReopenFree, CharacterSpeeds workSpeeds)
     {
-        var needsClock = ActionSpeeds.NeedsClock(settings);
+        var needsClock = ActionSpeeds.NeedsClock(settings) || !workSpeeds.IsGamePace;
 
         if (!needsClock && !isReopenFree)
         {
@@ -53,7 +53,7 @@ internal static class EffectClockPatch
 
         if (!_isHooked && !Hook()) return;
 
-        _log(needsClock ? "full benefits on, sped-up actions give everything they give at the game's pace" : "action effects hooked for free second searches only");
+        _log(needsClock ? "sped-up actions give everything they give at the game's pace" : "action effects hooked for free second searches only");
     }
 
     private static bool Hook()
@@ -104,8 +104,9 @@ internal static class EffectClockPatch
             if (__instance == null) return;
 
             var action = AgentTools.GetAgentComponent<ActionComponent>(__instance);
+            var owner = __instance.InstanceId;
 
-            during = EffectClock.BarSeconds(during, Clock.ClockOfAction(action?.ActionConfig?.ID, () => IsTargetSearched(action)));
+            during = EffectClock.BarSeconds(during, Clock.ClockOfAction(action?.ActionConfig?.ID, () => IsTargetSearched(action), () => Characters.Of(owner)));
         }
         catch (Exception ex)
         {
@@ -117,6 +118,8 @@ internal static class EffectClockPatch
     public static void Publish(IReadOnlyDictionary<int, float> clockByAction) => Clock.Publish(clockByAction);
 
     public static void PublishSearches(IReadOnlySet<int> searchActions) => Clock.PublishSearches(searchActions);
+
+    public static void PublishWorkSpeeds(CharacterSpeeds workSpeeds) => Clock.PublishWorkSpeeds(workSpeeds);
 
     /// <summary>The game marks a container searched when its bag first opens.</summary>
     private static bool IsTargetSearched(ActionComponent? action)
@@ -184,6 +187,8 @@ internal static class EffectClockPatch
         public int? OwnersActionId() => OwnersAction()?.ActionConfig?.ID;
 
         public bool IsOwnersTargetSearched() => IsTargetSearched(OwnersAction());
+
+        public Character Owner() => Characters.Of(_args._OwnerId_k__BackingField);
 
         private ActionComponent? OwnersAction()
         {

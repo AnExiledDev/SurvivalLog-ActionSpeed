@@ -2,8 +2,8 @@ using System;
 
 namespace ActionSpeed.Core;
 
-/// <summary>Who is walking, as far as walking speed goes.</summary>
-public enum Walker
+/// <summary>Who is walking or working, as far as their speed goes.</summary>
+public enum Character
 {
     /// <summary>The character the player controls.</summary>
     Player,
@@ -12,11 +12,11 @@ public enum Walker
     /// <summary>The other people living at the base.</summary>
     Survivor,
 
-    /// <summary>Anyone else, raiders and creatures included; they always walk at the game's speed.</summary>
+    /// <summary>Anyone else, raiders and creatures included; they always keep the game's pace.</summary>
     Other,
 }
 
-public readonly record struct WalkSpeeds(float Player, float Robot, float Survivor)
+public readonly record struct CharacterSpeeds(float Player, float Robot, float Survivor)
 {
     public bool IsGamePace => Player == 1f && Robot == 1f && Survivor == 1f;
 }
@@ -32,21 +32,21 @@ public static class Walking
     /// The game keeps the base's survivors and its robot as one kind of character and every hostile as another, so
     /// only that first kind, plus the player, is ever sped up.
     /// </summary>
-    public static Walker Classify(bool isLeadingRole, bool isBaseResident, bool isRobot)
+    public static Character Classify(bool isLeadingRole, bool isBaseResident, bool isRobot)
     {
-        if (isLeadingRole) return Walker.Player;
+        if (isLeadingRole) return Character.Player;
 
-        if (!isBaseResident) return Walker.Other;
+        if (!isBaseResident) return Character.Other;
 
-        return isRobot ? Walker.Robot : Walker.Survivor;
+        return isRobot ? Character.Robot : Character.Survivor;
     }
 
-    public static float SpeedFor(Walker walker, WalkSpeeds speeds) => walker switch
+    public static float SpeedFor(Character walker, CharacterSpeeds speeds) => walker switch
     {
-        Walker.Player => speeds.Player,
-        Walker.Robot => speeds.Robot,
-        Walker.Survivor => speeds.Survivor,
-        Walker.Other => 1f,
+        Character.Player => speeds.Player,
+        Character.Robot => speeds.Robot,
+        Character.Survivor => speeds.Survivor,
+        Character.Other => 1f,
         _ => throw new ArgumentOutOfRangeException(nameof(walker), walker, null),
     };
 }

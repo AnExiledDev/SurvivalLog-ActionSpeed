@@ -101,16 +101,27 @@ Older versions had one speed per game action type (`FurnitureUse`, `Food`, `Rest
 
 1 is the game's speed and 2 is twice as fast. Each is held between 0.25 and 5. A value below 0.25 is raised to 0.25 and a value above 5 is lowered to 5. A `0` (or a negative number) is raised to 0.25, a quarter of the game's walking speed. When all three are exactly 1, the mod does not touch walking at all.
 
+## Work
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| `Speed` | `1` | How fast you do every action, meaning the character you control. |
+| `RobotSpeed` | `1` | How fast robots do every action. |
+| `SurvivorSpeed` | `1` | How fast other people at your base do every action. |
+
+A work speed adds to each action's own speed: with `Sleep` at 2 and your `Speed` at 2, you sleep four times as fast. The action still gives its full effect, even with `FullBenefits` off. Raiders and creatures always keep the game's pace. Each is held between 0.25 and 20, and `0` or a negative number counts as 1. When all three are exactly 1, they change nothing.
+
 ## Speed
 
-Crafting is timed apart from the action table, so it has its own speed here. At 1 (the default) the mod does not touch crafting at all. Brewing and cooking speeds are in the Machine Speed mod.
+Crafting and expedition travel are timed apart from the action table, so they have their own speeds here. At 1 (the default) the mod does not touch them at all. Brewing and cooking speeds are in the Machine Speed mod.
 
 | Setting | Default | What it does |
 | --- | --- | --- |
 | `Crafting` | `1` | Speed of crafting at a workbench. 2 halves the time a craft takes. |
+| `Travel` | `1` | Speed of the trip between home and an expedition place, going out and coming home. 2 halves the trip. The map shows the new time. A vehicle's discount still applies on top. |
 
-It is held between 0.25 and 20. A value outside that range is pulled to the nearest end, and the log says so at startup and when the setting changes, for example `Speed/Crafting = 50 is outside 0.25 to 20, using 20`.
+Each is held between 0.25 and 20. A value outside that range is pulled to the nearest end, and the log says so at startup and when the setting changes, for example `Speed/Crafting = 50 is outside 0.25 to 20, using 20`.
 
 What 0 does here: `0` or a negative number counts as 1, the game's pace, and the log says so at startup and when the setting changes, for example `Speed/Crafting = 0 is not a speed above 0, using the game's pace (1)`.
 
-A craft keeps the length it had when it started, so a change here only affects crafts started after it.
+A craft keeps the length it had when it started, so a change here only affects crafts started after it. A `Travel` change applies to the next trip.

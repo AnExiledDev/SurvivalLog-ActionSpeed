@@ -16,7 +16,7 @@ namespace ActionSpeed;
 public sealed class Plugin : BasePlugin
 {
     private const string Guid = "com.dev.survivallog.actionspeed";
-    private const string Version = "0.8.0";
+    private const string Version = "0.9.0";
     private const string ActionRange = "From 0.25 to 20: 1 is the game's pace, 2 is twice as fast.";
     private const string ActionRangeChinese = "范围 0.25 到 20：1 为游戏原速，2 为两倍速。";
     private const string WalkRange = "From 0.25 to 5: 1 is the game's speed, 2 is twice as fast.";
@@ -38,6 +38,8 @@ public sealed class Plugin : BasePlugin
             "设为 true 时，搜寻已经搜过的容器会立即打开：不花时间，外出探索时也不会因此增加暴露值。设为 false 时，每次搜寻都按游戏原本的时间进行。");
         var walking = BindWalking();
         var crafting = BindKind("Crafting", "crafting at a workbench", "工作台手工制作");
+        var travel = BindKind("Travel", "travel between home and an expedition place, both ways; the map shows the new time", "往返家与外出地点的路程，去程和回程都算；地图上显示新的时间");
+        var work = BindWork();
         var harmony = new Harmony(Guid);
         var writer = new ActionWriter(Path.Combine(Paths.BepInExRootPath, "action-speed-actions.txt"), log.Write, EffectClockPatch.Publish, EffectClockPatch.PublishSearches);
 
@@ -46,18 +48,22 @@ public sealed class Plugin : BasePlugin
         EffectClockPatch.Apply(harmony, log.Write, log.WriteFileOnly);
         WalkPatch.Apply(harmony, log.Write, log.WriteFileOnly);
         CraftPatch.Apply(harmony, log.Write, log.WriteFileOnly);
+        TravelPatch.Apply(harmony, log.Write, log.WriteFileOnly);
 
         OptionalLive.Watch(() =>
         {
             var settings = ReadActions(actions, log.Write);
+            var workSpeeds = ReadWork(work, log.Write);
 
-            log.Write($"{Describe(settings)}, free second search {(isReopenFree.Value ? "on" : "off")}");
+            log.Write($"{Describe(settings)}, free second search {(isReopenFree.Value ? "on" : "off")}, work x{workSpeeds.Player:0.##} for you, x{workSpeeds.Robot:0.##} for the robot, x{workSpeeds.Survivor:0.##} for survivors");
             writer.Use(settings, isReopenFree.Value);
-            EffectClockPatch.Use(settings, isReopenFree.Value);
-        }, actions.All.Append(isReopenFree).ToArray());
+            EffectClockPatch.PublishWorkSpeeds(workSpeeds);
+            EffectClockPatch.Use(settings, isReopenFree.Value, workSpeeds);
+        }, actions.All.Append(isReopenFree).Concat(work.All).ToArray());
 
         OptionalLive.Watch(() => WalkPatch.Use(ReadWalking(walking)), walking.Player, walking.Robot, walking.Survivor);
-        OptionalLive.Watch(crafting, speed => CraftPatch.Use(ReadKind("Crafting", speed, log.Write)));
+        OptionalLive.Watch(crafting, speed => CraftPatch.Use(ReadKind("Speed/Crafting", speed, log.Write)));
+        OptionalLive.Watch(travel, speed => TravelPatch.Use(ReadKind("Speed/Travel", speed, log.Write)));
 
         SpeedTicker.Log = log.Write;
         SpeedTicker.Writer = writer;
@@ -72,7 +78,7 @@ public sealed class Plugin : BasePlugin
             "设为 true 时，加速的动作仍有完整效果：睡得更快也能休息得和平常一样足。设为 false 时，加速的动作会提前结束，只获得这段较短时间内的效果。");
         var overrides = Config.Bind("Actions", "Overrides", "",
             "Speeds for single actions, written as id:speed and separated by commas; these beat every speed setting. For example, 112:4 makes Use Toilet four times as fast. Every action and its id is listed in BepInEx\\action-speed-actions.txt.\n" +
-            "单独设置某个动作的速度，格式为 id:速度，多个用英文逗号分隔，优先于所有速度设置。例如 112:4 让坐下就开始……（上厕所）变为四倍速。所有动作及其 id 列在 BepInEx\\action-speed-actions.txt 中。");
+            "单独设置某个动作的速度，格式为 id:速度，多个用英文逗号分隔，优先于所有速度设置。例如 112:4 让上厕所变为四倍速。所有动作及其 id 列在 BepInEx\\action-speed-actions.txt 中。");
 
         return new ActionEntries(speeds, isFullBenefits, overrides);
     }
@@ -101,7 +107,27 @@ public sealed class Plugin : BasePlugin
         return new WalkEntries(player, robot, survivor);
     }
 
-    private static WalkSpeeds ReadWalking(WalkEntries walking) =>
+    private WorkEntries BindWork()
+    {
+        var player = Config.Bind("Work", "Speed", 1f,
+            $"How fast you do every action, meaning the character you control, on top of each action's own speed. The action still gives its full effect. {ActionRange} 0 or less counts as 1.\n" +
+            $"你做每个动作的速度，也就是你操控的那个角色，叠加在各动作自己的速度之上。动作仍有完整效果。{ActionRangeChinese}0 或更小按 1 计算。");
+        var robot = Config.Bind("Work", "RobotSpeed", 1f,
+            $"How fast robots do every action, on top of each action's own speed. The action still gives its full effect. {ActionRange} 0 or less counts as 1.\n" +
+            $"机器人做每个动作的速度，叠加在各动作自己的速度之上。动作仍有完整效果。{ActionRangeChinese}0 或更小按 1 计算。");
+        var survivor = Config.Bind("Work", "SurvivorSpeed", 1f,
+            $"How fast other people at your base do every action, on top of each action's own speed. The action still gives its full effect. {ActionRange} 0 or less counts as 1.\n" +
+            $"基地里其他人做每个动作的速度，叠加在各动作自己的速度之上。动作仍有完整效果。{ActionRangeChinese}0 或更小按 1 计算。");
+
+        return new WorkEntries(player, robot, survivor);
+    }
+
+    private static CharacterSpeeds ReadWork(WorkEntries work, Action<string> log) =>
+        new(ReadKind("Work/Speed", work.Player.Value, log).Speed,
+            ReadKind("Work/RobotSpeed", work.Robot.Value, log).Speed,
+            ReadKind("Work/SurvivorSpeed", work.Survivor.Value, log).Speed);
+
+    private static CharacterSpeeds ReadWalking(WalkEntries walking) =>
         new(Walking.Clamp(walking.Player.Value), Walking.Clamp(walking.Robot.Value), Walking.Clamp(walking.Survivor.Value));
 
     /// <summary>Work the game times outside its action table; 1 leaves the game's timing exactly as it is.</summary>
@@ -113,7 +139,7 @@ public sealed class Plugin : BasePlugin
     private static KindSpeed ReadKind(string key, float value, Action<string> log)
     {
         var speed = KindSpeed.From(value);
-        var complaint = KindSpeeds.Complaint($"Speed/{key}", speed);
+        var complaint = KindSpeeds.Complaint(key, speed);
 
         if (complaint != null) log(complaint);
 
@@ -136,4 +162,9 @@ public sealed class Plugin : BasePlugin
     }
 
     private sealed record WalkEntries(ConfigEntry<float> Player, ConfigEntry<float> Robot, ConfigEntry<float> Survivor);
+
+    private sealed record WorkEntries(ConfigEntry<float> Player, ConfigEntry<float> Robot, ConfigEntry<float> Survivor)
+    {
+        public IEnumerable<ConfigEntryBase> All => new ConfigEntryBase[] { Player, Robot, Survivor };
+    }
 }

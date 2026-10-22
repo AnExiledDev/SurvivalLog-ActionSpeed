@@ -4,7 +4,6 @@ using ActionSpeed.Core;
 using GameCore.HotUpdate;
 using GameCore.HotUpdate.Battle.Logic;
 using HarmonyLib;
-using BaseResident = GameCore.HotUpdate.Battle.Logic.DynamicNpc;
 
 namespace ActionSpeed.Adapters;
 
@@ -18,9 +17,9 @@ internal static class WalkPatch
 {
     private const int MaxLoggedFailures = 3;
 
-    private static readonly HashSet<Walker> FirstWalksLogged = new();
+    private static readonly HashSet<Character> FirstWalksLogged = new();
 
-    private static WalkSpeeds _speeds = new(1f, 1f, 1f);
+    private static CharacterSpeeds _speeds = new(1f, 1f, 1f);
     private static Harmony? _harmony;
     private static bool _isHooked;
     private static Action<string> _log = _ => { };
@@ -39,7 +38,7 @@ internal static class WalkPatch
     /// Called on the main thread at start and after each change; walks started after it go at the new speeds. The hook
     /// goes in the first time a speed is not the game's, and at the game's speed it leaves every walk alone.
     /// </summary>
-    public static void Use(WalkSpeeds speeds)
+    public static void Use(CharacterSpeeds speeds)
     {
         _speeds = speeds;
 
@@ -85,7 +84,7 @@ internal static class WalkPatch
 
         try
         {
-            var walker = WalkerOf(__instance.ownerInstanceId);
+            var walker = Characters.Of(__instance.ownerInstanceId);
             var multiplier = Walking.SpeedFor(walker, _speeds);
 
             if (multiplier == 1f) return;
@@ -102,20 +101,5 @@ internal static class WalkPatch
 
             if (_failures <= MaxLoggedFailures) _log($"scaling a walk failed, it goes at the game's speed (logged {_failures} of {MaxLoggedFailures}): {ex}");
         }
-    }
-
-    /// <summary>With no world loaded nobody is known, and an unknown walker keeps the game's speed.</summary>
-    private static Walker WalkerOf(long instanceId)
-    {
-        if (!BaseSingleton<BattleLogicWorld>.IsInstanceCreated) return Walker.Other;
-
-        var agents = BaseSingleton<BattleLogicWorld>.Instance._AgentManager;
-
-        if (agents == null) return Walker.Other;
-
-        var isPlayer = instanceId == agents.LeadingRoleId;
-        var resident = isPlayer ? null : agents.GetAgent(instanceId)?.TryCast<BaseResident>();
-
-        return Walking.Classify(isPlayer, resident != null, resident?.IsRobot == true);
     }
 }

@@ -1,5 +1,5 @@
 Name: Action Speed
-Summary: Make eating, sleeping, reading, chores, farming, crafting and every other action take less game time while still giving the full benefit, so a nap twice as fast leaves you just as rested. Set one speed for everything, one per section, or one for each of 38 kinds of action, plus walking speed for you, the robot and survivors. Starts at the game's pace.
+Summary: Make eating, sleeping, reading, chores, farming, crafting and every other action take less game time while still giving the full benefit, so a nap twice as fast leaves you just as rested. Set one speed for everything, per section, or for each of 38 kinds of action, plus work and walking speed for you, the robot and survivors, and expedition travel time.
 
 Description (BBCode):
 Short chores eat your day in Survival Log. Action Speed lets you choose how much game time each kind of action takes, and how fast you, the robot and other people at your base walk. Everything is set in one config file, and each setting there says what it covers.
@@ -15,6 +15,8 @@ Short chores eat your day in Survival Log. Action Speed lets you choose how much
 [*][b]Single actions[/b]: set a speed for one action by its id.[/*]
 [*][b]Action list[/b]: every action with the setting it follows and its old and new time is written to a text file.[/*]
 [*][b]Faster walking[/b]: you, the robot and your survivors each have their own walking speed, the game's speed by default. Enemies keep the game's speed.[/*]
+[*][b]Work speed[/b]: you, the robot and your survivors can each work faster at everything they do, on top of each action's speed, still with the full effect. The game's pace by default.[/*]
+[*][b]Expedition travel[/b]: shorter or longer trips to expedition places and back. The map shows the new time. Off by default.[/*]
 [*][b]Crafting[/b]: its own speed. Off by default. Brewing and cooking speeds are in Machine Speed.[/*]
 [/list]
 Action Speed writes no data of its own into your save and does not edit game files. It does change how much game time things take, and your save reflects that. You can remove it at any time; actions started after that take the game's own time again.
@@ -70,6 +72,8 @@ Open source under MIT: [url=https://github.com/AnExiledDev/SurvivalLog-ActionSpe
 [*][b]单个动作[/b]：按 id 给某一个动作单独设置速度。[/*]
 [*][b]动作列表[/b]：每个动作所属的设置以及原来和现在的时长都会写进一个文本文件。[/*]
 [*][b]走得更快[/b]：你、机器人和幸存者各有自己的行走速度，默认为游戏原速。敌人保持游戏原速。[/*]
+[*][b]工作速度[/b]：你、机器人和幸存者可以各自加快所做的每个动作，叠加在各动作自己的速度之上，效果仍然完整。默认为游戏原速。[/*]
+[*][b]外出路程[/b]：缩短或延长前往外出地点和返回的路程。地图上显示新的时间。默认不改动。[/*]
 [*][b]制造[/b]：有独立的速度，默认不改动。酿酒和烹饪的速度在 Machine Speed 模组中。[/*]
 [/list]
 Action Speed 不会往存档里写入自己的数据，也不会修改游戏文件。但它确实改变了各种事情花费的游戏时间，存档也会反映这一点。随时可以移除；移除后新开始的动作会恢复游戏原本的时长。

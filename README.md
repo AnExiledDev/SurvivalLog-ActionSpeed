@@ -13,6 +13,8 @@ In Survival Log every action costs game time: eating, using furniture, treating 
 - **Overrides by id**: set a speed for one single action by its id. An override beats every speed setting.
 - **Every action listed**: the mod writes `BepInEx\action-speed-actions.txt`, listing every action with its id, name, the setting it follows, the game's time, the time with this mod, and why.
 - **Walking speed**: you (the character you control), the robot and other people at your base each have a walking speed, 1 (the game's speed) by default. Enemies always walk at the game's speed. The walk animation keeps up with the faster walk.
+- **Work speed**: you, the robot and other people at your base each have a work speed that speeds up every action they do, on top of each action's own speed. The action still gives its full effect. 1 (the game's pace) by default. Raiders and creatures always keep the game's pace.
+- **Expedition travel**: one speed for the trip between home and an expedition place, both ways. The map shows the new travel time. 1 (the game's pace) by default.
 - **Crafting speed**: crafting at a workbench is timed apart from other actions, so it has its own speed. It defaults to 1, the game's pace, and at 1 the mod does not touch crafting at all. Brewing and cooking speeds are in the Machine Speed mod.
 - **Older settings carried over**: a settings file from 0.7 or older is moved to the new settings the first time 0.8 starts, so every action keeps the speed it had.
 - **Keeps up with the game**: if the game reloads its action table, the mod notices within a few seconds and writes its times back.
@@ -75,7 +77,7 @@ Settings live in `BepInEx\config\com.dev.survivallog.actionspeed.cfg`, created t
 
 Built for Survival Log 1.1.19131 with BepInEx `6.0.0-be.788`.
 
-Check `BepInEx\LogOutput.log` for `===== Action Speed 0.8.0 started`. The line after it lists the action speeds in use, such as `most actions x2, except Leisure/Reading x10`, ending for example `full benefits on, free second search off`. Lines below it say what was hooked, such as `full benefits on, sped-up actions give everything they give at the game's pace`, `progress bars of sped-up actions fill with the action`, `walking speed x1.5 for you, x1 for the robot, x1 for survivors` and `crafting left at the game's pace`. A setting changed on the Mods screen writes its lines again. A line starting `could not hook` means a game update has changed that part of the game, and it stays at the game's pace until the mod is updated.
+Check `BepInEx\LogOutput.log` for `===== Action Speed 0.9.0 started`. The line after it lists the action speeds in use, such as `most actions x2, except Leisure/Reading x10`, then for example `full benefits on, free second search off, work x1 for you, x1 for the robot, x1 for survivors`. Lines below it say what was hooked, such as `full benefits on, sped-up actions give everything they give at the game's pace`, `progress bars of sped-up actions fill with the action`, `walking speed x1.5 for you, x1 for the robot, x1 for survivors`, `expedition travel x2` and `crafting left at the game's pace`. A setting changed on the Mods screen writes its lines again. A line starting `could not hook` means a game update has changed that part of the game, and it stays at the game's pace until the mod is updated.
 
 Once the game has loaded its tables, look for `N of M actions changed, every action is listed in action-speed-actions.txt`.
 
