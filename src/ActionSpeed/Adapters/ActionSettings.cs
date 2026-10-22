@@ -114,9 +114,9 @@ internal sealed class ActionSettings
     /// Moves a file written by an older version onto the group settings, then removes the old keys. Runs before any
     /// setting is applied. A file that cannot be read or tidied keeps working: the old keys are only left behind.
     /// </summary>
-    public void MoveOldSettings(ConfigFile config, Action<string> log)
+    public void MoveOldSettings(string? savedSettings, ConfigFile config, Action<string> log)
     {
-        var oldActions = ReadOldActions(config.ConfigFilePath, log);
+        var oldActions = savedSettings != null && LegacySettings.Find(savedSettings) is { } found ? new Dictionary<string, string>(found) : null;
         var wasSaving = config.SaveOnConfigSet;
 
         config.SaveOnConfigSet = false;
@@ -149,11 +149,12 @@ internal sealed class ActionSettings
         log($"moved the old action type speeds to the new settings: Everything x{migration.Speeds.Everything:0.##}, {string.Join(", ", changed.DefaultIfEmpty("nothing else set"))}");
     }
 
-    private static Dictionary<string, string>? ReadOldActions(string path, Action<string> log)
+    /// <summary>The settings file as it was before this version bound its keys, or null when there is none yet.</summary>
+    public static string? ReadFile(string path, Action<string> log)
     {
         try
         {
-            return File.Exists(path) && LegacySettings.Find(File.ReadAllText(path)) is { } found ? new Dictionary<string, string>(found) : null;
+            return File.Exists(path) ? File.ReadAllText(path) : null;
         }
         catch (Exception ex)
         {

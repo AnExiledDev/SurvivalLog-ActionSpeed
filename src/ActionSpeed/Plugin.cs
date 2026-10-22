@@ -30,6 +30,8 @@ public sealed class Plugin : BasePlugin
 
         log.TrimIfLarge();
 
+        // Read before any Bind: binding a new key saves the file, which would hide that it came from an older version.
+        var savedSettings = ActionSettings.ReadFile(Config.ConfigFilePath, log.Write);
         var actions = BindActions();
         var isReopenFree = Config.Bind("Actions", "FreeSecondSearch", false,
             "When true, searching a container you have already searched opens it at once: no time passes, so an expedition adds no exposure for it. When false, every search takes the game's time.\n" +
@@ -40,7 +42,7 @@ public sealed class Plugin : BasePlugin
         var writer = new ActionWriter(Path.Combine(Paths.BepInExRootPath, "action-speed-actions.txt"), log.Write, EffectClockPatch.Publish, EffectClockPatch.PublishSearches);
 
         log.Write($"===== Action Speed {Version} started");
-        actions.Speeds.MoveOldSettings(Config, log.Write);
+        actions.Speeds.MoveOldSettings(savedSettings, Config, log.Write);
         EffectClockPatch.Apply(harmony, log.Write, log.WriteFileOnly);
         WalkPatch.Apply(harmony, log.Write, log.WriteFileOnly);
         CraftPatch.Apply(harmony, log.Write, log.WriteFileOnly);
