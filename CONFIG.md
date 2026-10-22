@@ -6,44 +6,90 @@ A speed of 1 is always the game's own pace. 2 takes half the game time, 4 takes 
 
 ## Actions
 
-One speed per action type, plus four settings: one for reading, one for full benefits, one for single actions and one for searching a container again.
+Action speeds come in three levels. `Everything` in `[Actions]` sets every action at once. Each section below (`[Eating]`, `[Health]` and so on) has an `All` that sets the whole section. Each single setting in a section sets one kind of action. The most specific setting above 0 wins: a single setting beats its section's `All`, and `All` beats `Everything`. Leave a setting at `0` to follow the level above it.
+
+Every action and the setting it follows are listed in `BepInEx\action-speed-actions.txt` (see below).
+
+### [Actions]
 
 | Setting | Default | What it does |
 | --- | --- | --- |
-| `FurnitureUse` | `1` | Speed of furniture actions, such as unpacking furniture packages, Take Apart Chime, Break Trinket, Deploy Rescue Beacon, Upgrade Gate and Try Cooking. |
-| `Food` | `1` | Speed of eating and drinking, such as Eat Cookies, Eat Burger, Drink Coffee, Enjoy Hot Pot and Eat Food. |
-| `Treatment` | `1` | Speed of taking medicine: Eat Vitamins and Take Meds. |
-| `Other` | `1` | Speed of everything else, such as Search, Harvest, Pry Open, Wash Hands, Use Toilet, Unlock Furniture, Planting, the timed "organize items" action (id 11) and short moments like Hungry... and Tired... |
-| `Rest` | `1` | Speed of sleeping and resting, such as Sleep, Nap, Play Video Games, Have Fun and Disinfect. |
-| `Entertainment` | `1` | Speed of fun and relaxing, such as Listen to Music, Dance, Massage, Look in Mirror and Admire. |
-| `Exercise` | `1` | Speed of exercise and some chores, such as Work Out, Running, Do Push-ups, Manual Power Generation, Do Laundry, Clean and Take a Bath. |
-| `Social` | `1` | Speed of quiet time, such as Look Outside, Listen to Radio, Meditate, Journal and Do Yoga. |
-| `Move` | `1` | Moving around the map and between floors. These last as long as the walk, so this setting changes nothing; use `[Walking]` instead. |
-| `Free` | `1` | No action in the game uses this type, so this setting changes nothing. |
-| `RepairFurniture` | `1` | Speed of repairs and building work, such as Repair, Fix Door, Restore Power, Reinforce Door, Install Furniture, Move Furniture, Dismantle and Scrap. |
-| `Reading` | `0` | Speed of reading books, magazines, newspapers, notes and letters, whatever their type. An action counts as reading when the game plays its reading animation or sound for it. `0` leaves reading at its type's speed. |
+| `Everything` | `1` | Speed of every action, unless a section's `All` or a single setting says otherwise. `0` or less counts as 1. |
+| `Other` | `0` | Every action no other setting covers, such as Talk and switching electronics on and off. `0` follows `Everything`. |
 | `FullBenefits` | `true` | When true, a sped-up action still gives its full effect: a faster sleep rests you as much as a normal one. When false, a sped-up action ends early and gives only what it gave in that shorter time. |
-| `Overrides` | empty | Speeds for single actions, written as `id:speed` and separated by commas, for example `112:4, 39:2`. An override beats its type's speed. `112:4` makes Use Toilet four times as fast. Every action and its id is listed in `BepInEx\action-speed-actions.txt`. |
-| `FreeSecondSearch` | `false` | When true, searching a container you have already searched opens it at once: no game time passes, so on an expedition it adds no exposure. When false, every search takes the game's time (or its type's or override's speed). |
+| `Overrides` | empty | Speeds for single actions, written as `id:speed` and separated by commas, for example `112:4, 39:2`. An override beats every speed setting. `112:4` makes Use Toilet four times as fast. |
+| `FreeSecondSearch` | `false` | When true, searching a container you have already searched opens it at once: no game time passes, so on an expedition it adds no exposure. When false, every search takes the game's time (or its speed setting's or override's). |
 
-To find an action's id and type, open `BepInEx\action-speed-actions.txt`. The mod writes it once the game has loaded its tables. Each line reads `id | name | type | game clock -> with this mod | why`, with times in minutes of game time. When an action keeps its full benefits, its time ends in `, full benefits`. The last column is one of:
+### Sections
 
-- `Changed`: sped up (or slowed down) by its type's speed.
+Every section has `All` (default `0`, follows `Everything`). Every single setting defaults to `0` and follows its section's `All`.
+
+| Section | Setting | Covers |
+| --- | --- | --- |
+| `[Eating]` | `Meals` | Meals and ingredients, such as Eat Crackers, Eat Carrot and Eat Mushroom Soup. |
+| | `Snacks` | Snacks and fruit, such as Eat Cookies, Eat Candy, Eat Banana and Eat Potato Chips. |
+| | `Drinks` | Drinks, such as Drink Coffee, Drink Cola and Drink Whisky. |
+| `[Health]` | `Medicine` | Medicine and first aid, such as Take Meds, Eat Vitamins, Use Bandage and Patch Yourself Up. |
+| | `Sickness` | Vomiting and Diarrhea. |
+| | `Moods` | Short moments like Hungry..., Tired..., Sad... and feeling cold. |
+| `[Hygiene]` | `Toilet` | Use Toilet and the other toilet actions. |
+| | `Washing` | Wash Hands, Take a Bath, Brush Teeth and other washing up. |
+| `[Rest]` | `Sleep` | Sleep. |
+| | `Nap` | Nap, Snooze... and other short rests. |
+| `[Leisure]` | `Reading` | Books, magazines, newspapers, notes and letters, wherever they come from. An action counts as reading when the game plays its reading animation or sound for it. |
+| | `Games` | Play Video Games, Play Darts, Use Playing Cards and trying out electronics. |
+| | `Music` | Listen to Music, Listen to Radio and Put on Record. |
+| | `Dancing` | Dance. |
+| | `QuietTime` | Look Outside, Meditate, Journal and Do Yoga. |
+| | `Relaxing` | Rest, Massage, Look in Mirror, Admire and View Artwork. |
+| | `Workouts` | Work Out, Running, Do Push-ups and Use Dumbbells. |
+| `[Chores]` | `Cleaning` | Clean, Disinfect and Do Laundry. |
+| | `Organizing` | Organize Items (id 11), Put Away and Check Supplies. |
+| | `BoilingWater` | Boil Water. |
+| | `Power` | Manual Power Generation and Turn On Generator. |
+| | `Unpacking` | Unpacking furniture packages and opening packs and gift boxes, such as Open Fruit Crate. |
+| | `Salvaging` | Take Apart Chime, Break Trinket, Flatten Can and other collectibles taken apart. |
+| `[Farming]` | `Planting` | Planting seeds and transplanting. |
+| | `Watering` | Watering crops. |
+| | `Harvesting` | Harvest. |
+| | `Tending` | Remove Weeds, Remove Pests, tilling soil and using fertilizer. |
+| `[Building]` | `Repairs` | Repair, Fix Door, Restore Power and Repair Stairs. |
+| | `Reinforcing` | Reinforce Door, Reinforce Window and Upgrade Gate. |
+| | `Furnishing` | Install Furniture and Move Furniture. |
+| | `Demolishing` | Demolish, Dismantle and Scrap. |
+| | `Projects` | Create Rescue Beacon, Unlock Furniture, studying a build and other building projects. |
+| `[Scavenging]` | `Searching` | Search and taking supplies. |
+| | `BreakingIn` | Unlock, Pry Open, Pick Lock and Force Open. |
+| | `Inspecting` | View, Look Closely and Leaf Through. |
+| | `Drones` | Drone Patrol and Drone Scavenging. |
+| `[Defense]` | `Traps` | Set Trap, Install Trap, Dismantle Trap and Move Trap. |
+| | `Throwing` | Throw Molotov Cocktail, Throw Glow Stick and Fire Flare. |
+
+For example, to make everything twice as fast but leave sleep alone: `Everything = 2` in `[Actions]` and `Sleep = 1` in `[Rest]`. To speed up only farming: `All = 3` in `[Farming]`.
+
+### The action list
+
+To find an action's id and the setting it follows, open `BepInEx\action-speed-actions.txt`. The mod writes it once the game has loaded its tables, and again once the game's language has loaded. Each line reads `id | name | setting | game clock -> with this mod | why`, with times in minutes of game time. The setting is written as `Section/Setting`, such as `Hygiene/Toilet`. When an action keeps its full benefits, its time ends in `, full benefits`. The last column is one of:
+
+- `Changed`: sped up (or slowed down) by its speed setting.
 - `Overridden`: set by `Overrides`.
-- `Reading`: set by `Reading`.
-- `GameSpeed`: its type's speed is 1, so it keeps the game's time.
-- `TimedElsewhere`: not timed by this table (crafting, brewing, cooking and some others). Its time shows as "not timed by this table", and neither a type speed nor an override changes it. Use the `[Speed]` section for crafting. Brewing and cooking are in the Machine Speed mod.
+- `GameSpeed`: its speed works out to 1, so it keeps the game's time.
+- `TimedElsewhere`: not timed by this table (crafting, brewing, cooking and some others). Its time shows as "not timed by this table", and neither a speed setting nor an override changes it. Use the `[Speed]` section for crafting. Brewing and cooking are in the Machine Speed mod.
 
-`FreeSecondSearch` counts a container as searched once its contents have been opened the first time. It applies to every search that opens a container, whatever its type speed or override, with `FullBenefits` on or off. The action list does not show it, because it depends on the container.
+`FreeSecondSearch` counts a container as searched once its contents have been opened the first time. It applies to every search that opens a container, whatever its speed or override, with `FullBenefits` on or off. The action list does not show it, because it depends on the container.
 
-Type speeds and override speeds are held between 0.25 and 20. A value below 0.25 is raised to 0.25 and a value above 20 is lowered to 20.
+Speeds and override speeds are held between 0.25 and 20. A value below 0.25 is raised to 0.25 and a value above 20 is lowered to 20.
 
 What 0 does here:
 
-- A type speed of `0` (or a negative number) is raised to 0.25, which makes that type take four times as long. To leave a type at the game's pace, write `1`.
+- `Everything` at `0` or less counts as 1, the game's pace.
+- An `All` or a single setting at `0` or less follows the level above it. To put one kind of action back at the game's pace while the rest is sped up, write `1`.
 - An override with a speed of `0` or less, or an entry that is not `id:speed`, is skipped. The log says `ignored override '<entry>', write it as id:speed with a speed above 0` at startup and whenever an action setting changes.
-- A `Reading` of `0` or less leaves every reading action at its type's speed. Above 0 it is held between 0.25 and 20 like the type speeds.
-- An override of `1` puts that one action back at the game's pace even when its type is sped up.
+- An override of `1` puts that one action back at the game's pace even when its setting is sped up.
+
+### Settings from 0.7 and older
+
+Older versions had one speed per game action type (`FurnitureUse`, `Food`, `Rest`, `Entertainment`, `Exercise`, `Social`, `Treatment`, `Move`, `Other`, `Free`, `RepairFurniture`) and a `Reading` speed. The first time 0.8 starts with such a file, it moves those values to the new settings so every action keeps the speed it had, then removes the old keys. The speed most actions shared becomes `Everything`, a section where most settings share a speed gets that as its `All`, and only the settings that differ get their own value. The log says what was moved. The old `[Speed]` `Brewing` and `Cooking` lines, which Machine Speed took over in 0.5, are removed too.
 
 ## Walking
 

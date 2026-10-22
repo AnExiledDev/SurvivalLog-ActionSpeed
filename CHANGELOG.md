@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.0
+
+- Action speeds are now set per kind of action instead of per game action type: 38 settings such as `Meals`, `Snacks`, `Drinks`, `Sleep`, `Nap`, `Reading`, `Toilet`, `Cleaning`, `Harvesting`, `Repairs`, `Searching` and `Traps`, in ten sections. Each section has an `All` setting for the whole section, and `Everything` in `[Actions]` sets every action at once. A setting at 0 follows the one above it.
+- Your old settings move over by themselves the first time the game starts: every action keeps the speed it had, and the old keys are removed from the config file. The log says what was moved.
+- The useless `Move` and `Free` settings are gone; those actions are timed by walking or not timed at all.
+- The old `Brewing` and `Cooking` lines left in `[Speed]` since 0.5 are removed from the config file.
+- The action list shows action names in the game's language. Before, names could show as raw text keys when the list was written before the game's language had loaded.
+- The action list shows the setting each action follows, such as `Hygiene/Toilet`.
+
 ## 0.7.1
 
 - After a game update, a hook that can no longer be placed is logged as an error, so the Mod Manager can mark the mod as maybe needing an update.

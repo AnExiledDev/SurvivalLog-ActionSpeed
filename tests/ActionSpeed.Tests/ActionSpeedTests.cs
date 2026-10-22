@@ -12,7 +12,7 @@ public class DecideTests
     private static ActionRow Eat(float during = 1800f) => new(500, "eat", Food, during);
 
     private static SpeedSettings Settings(float foodSpeed = 2f, bool fullBenefits = true, Dictionary<int, float>? overrides = null) =>
-        new(new Dictionary<int, float> { [Food] = foodSpeed, [Other] = 3f }, overrides ?? new Dictionary<int, float>(), fullBenefits);
+        new(new Dictionary<Group, float> { [Group.Meals] = foodSpeed, [Group.Other] = 3f }, overrides ?? new Dictionary<int, float>(), fullBenefits);
 
     [Fact]
     public void With_full_benefits_a_doubled_speed_keeps_the_table_duration_and_runs_the_effect_twice_as_fast()
@@ -43,9 +43,9 @@ public class DecideTests
     }
 
     [Fact]
-    public void An_action_type_with_no_speed_set_keeps_the_game_duration()
+    public void A_group_with_no_speed_set_keeps_the_game_duration()
     {
-        Assert.Equal(new ActionDecision(600f, 1f, Reason.GameSpeed), ActionSpeeds.Decide(new ActionRow(7, "sleep", Rest, 600f), Settings()));
+        Assert.Equal(new ActionDecision(600f, 1f, Reason.GameSpeed), ActionSpeeds.Decide(new ActionRow(7, "nap", Rest, 600f), Settings()));
     }
 
     [Fact]
@@ -60,7 +60,7 @@ public class DecideTests
     [Theory]
     [InlineData(true, 1800f, 4f)]
     [InlineData(false, 450f, 1f)]
-    public void An_override_beats_the_type_speed(bool fullBenefits, float during, float clock)
+    public void An_override_beats_the_group_speed(bool fullBenefits, float during, float clock)
     {
         var decision = ActionSpeeds.Decide(Eat(), Settings(fullBenefits: fullBenefits, overrides: new Dictionary<int, float> { [500] = 4f }));
 
@@ -79,13 +79,13 @@ public class DecideTests
 
 public class NeedsClockTests
 {
-    private static SpeedSettings Settings(float typeSpeed, bool fullBenefits, float? overrideSpeed = null) =>
-        new(new Dictionary<int, float> { [1] = typeSpeed },
+    private static SpeedSettings Settings(float groupSpeed, bool fullBenefits, float? overrideSpeed = null) =>
+        new(new Dictionary<Group, float> { [Group.Meals] = groupSpeed },
             overrideSpeed is { } speed ? new Dictionary<int, float> { [112] = speed } : new Dictionary<int, float>(),
             fullBenefits);
 
     [Fact]
-    public void Effects_need_a_faster_clock_when_full_benefits_is_on_and_a_type_is_sped_up()
+    public void Effects_need_a_faster_clock_when_full_benefits_is_on_and_a_group_is_sped_up()
     {
         Assert.True(ActionSpeeds.NeedsClock(Settings(2f, fullBenefits: true)));
     }
@@ -158,7 +158,7 @@ public class OverrideTests
     }
 
     [Fact]
-    public void Override_speeds_are_held_to_the_same_range_as_type_speeds()
+    public void Override_speeds_are_held_to_the_same_range_as_group_speeds()
     {
         Assert.Equal(ActionSpeeds.Fastest, ActionSpeeds.ParseOverrides("7:1000").Speeds[7]);
     }
@@ -187,29 +187,23 @@ public class ReadingTests
     private const int Entertainment = 3;
 
     private static readonly ActionRow Novel = new(100003001, "read mystery novel", Entertainment, 2400f, IsReading: true);
-    private static readonly ActionRow Newspaper = new(100002506, "read newspaper", Food, 600f, IsReading: true);
-    private static readonly ActionRow Music = new(30, "listen to music", Entertainment, 2400f);
+    private static readonly ActionRow Newspaper = new(100002506, "read newspaper", Food, 600f, IsReading: true, ItemCategory: 1);
+    private static readonly ActionRow Music = new(2999, "listen to music", Entertainment, 2400f);
 
-    private static SpeedSettings Settings(float? reading, Dictionary<int, float>? overrides = null, bool fullBenefits = false) =>
-        new(new Dictionary<int, float> { [Food] = 2f, [Entertainment] = 1f }, overrides ?? new Dictionary<int, float>(), fullBenefits, reading);
+    private static SpeedSettings Settings(float reading, Dictionary<int, float>? overrides = null, bool fullBenefits = false) =>
+        new(new Dictionary<Group, float> { [Group.Meals] = 2f, [Group.Relaxing] = 1f, [Group.Reading] = reading }, overrides ?? new Dictionary<int, float>(), fullBenefits);
 
     [Fact]
-    public void The_reading_speed_shortens_every_reading_action_whatever_its_type()
+    public void The_reading_speed_shortens_every_reading_action_whatever_its_game_type()
     {
-        Assert.Equal(new ActionDecision(240f, 1f, Reason.Reading), ActionSpeeds.Decide(Novel, Settings(reading: 10f)));
-        Assert.Equal(new ActionDecision(60f, 1f, Reason.Reading), ActionSpeeds.Decide(Newspaper, Settings(reading: 10f)));
+        Assert.Equal(new ActionDecision(240f, 1f, Reason.Changed), ActionSpeeds.Decide(Novel, Settings(reading: 10f)));
+        Assert.Equal(new ActionDecision(60f, 1f, Reason.Changed), ActionSpeeds.Decide(Newspaper, Settings(reading: 10f)));
     }
 
     [Fact]
-    public void The_reading_speed_leaves_other_actions_of_the_same_type_alone()
+    public void The_reading_speed_leaves_other_actions_of_the_same_game_type_alone()
     {
         Assert.Equal(new ActionDecision(2400f, 1f, Reason.GameSpeed), ActionSpeeds.Decide(Music, Settings(reading: 10f)));
-    }
-
-    [Fact]
-    public void With_no_reading_speed_reading_follows_its_type()
-    {
-        Assert.Equal(new ActionDecision(300f, 1f, Reason.Changed), ActionSpeeds.Decide(Newspaper, Settings(reading: null)));
     }
 
     [Fact]
@@ -225,23 +219,8 @@ public class ReadingTests
     {
         var settings = Settings(reading: 10f, fullBenefits: true);
 
-        Assert.Equal(new ActionDecision(2400f, 10f, Reason.Reading), ActionSpeeds.Decide(Novel, settings));
+        Assert.Equal(new ActionDecision(2400f, 10f, Reason.Changed), ActionSpeeds.Decide(Novel, settings));
         Assert.True(ActionSpeeds.NeedsClock(settings));
-    }
-
-    [Theory]
-    [InlineData(0f)]
-    [InlineData(-3f)]
-    [InlineData(float.NaN)]
-    public void A_reading_setting_of_zero_or_less_leaves_reading_to_its_type(float configured)
-    {
-        Assert.Null(ActionSpeeds.ReadingSpeed(configured));
-    }
-
-    [Fact]
-    public void A_reading_setting_above_the_range_is_pulled_to_the_fastest()
-    {
-        Assert.Equal(ActionSpeeds.Fastest, ActionSpeeds.ReadingSpeed(500f));
     }
 
     [Theory]
@@ -257,14 +236,34 @@ public class ReadingTests
     }
 }
 
+public class FollowTests
+{
+    [Theory]
+    [InlineData(0f)]
+    [InlineData(-3f)]
+    [InlineData(float.NaN)]
+    [InlineData(float.PositiveInfinity)]
+    public void A_setting_of_zero_or_less_or_nonsense_follows_the_speed_above(float configured)
+    {
+        Assert.Null(ActionSpeeds.Follow(configured));
+    }
+
+    [Fact]
+    public void A_setting_outside_the_range_is_pulled_into_it()
+    {
+        Assert.Equal(ActionSpeeds.Fastest, ActionSpeeds.Follow(500f));
+        Assert.Equal(ActionSpeeds.Slowest, ActionSpeeds.Follow(0.01f));
+    }
+}
+
 public class DescribeTests
 {
     [Fact]
-    public void The_action_list_shows_how_long_an_action_lasts_and_that_it_keeps_its_full_benefits()
+    public void The_action_list_shows_the_setting_an_action_follows_how_long_an_action_lasts_and_that_it_keeps_its_full_benefits()
     {
         var row = new ActionRow(112, "sit down", 8, 1800f);
 
-        Assert.Equal("112 | sit down | Other | 30.0 min -> 15.0 min, full benefits | Changed", ActionSpeeds.Describe(row, new ActionDecision(1800f, 2f, Reason.Changed), "Other"));
+        Assert.Equal("112 | sit down | Hygiene/Toilet | 30.0 min -> 15.0 min, full benefits | Changed", ActionSpeeds.Describe(row, new ActionDecision(1800f, 2f, Reason.Changed)));
     }
 
     [Fact]
@@ -272,7 +271,7 @@ public class DescribeTests
     {
         var row = new ActionRow(112, "sit down", 8, 1800f);
 
-        Assert.Equal("112 | sit down | Other | 30.0 min -> 15.0 min | Changed", ActionSpeeds.Describe(row, new ActionDecision(900f, 1f, Reason.Changed), "Other"));
+        Assert.Equal("112 | sit down | Hygiene/Toilet | 30.0 min -> 15.0 min | Changed", ActionSpeeds.Describe(row, new ActionDecision(900f, 1f, Reason.Changed)));
     }
 
     [Fact]
@@ -280,6 +279,6 @@ public class DescribeTests
     {
         var row = new ActionRow(39, "craft", 8, -1f);
 
-        Assert.Equal("39 | craft | Other | not timed by this table | TimedElsewhere", ActionSpeeds.Describe(row, new ActionDecision(-1f, 1f, Reason.TimedElsewhere), "Other"));
+        Assert.Equal("39 | craft | Actions/Other | not timed by this table | TimedElsewhere", ActionSpeeds.Describe(row, new ActionDecision(-1f, 1f, Reason.TimedElsewhere)));
     }
 }

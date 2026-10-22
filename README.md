@@ -6,20 +6,21 @@ In Survival Log every action costs game time: eating, using furniture, treating 
 
 ## Features
 
-- **Speed per action type**: every action in the game has a type (furniture use, food, rest, entertainment, exercise, social, treatment, move, other, free, repair). Each type gets a speed: 2 means the action takes half the game time, 0.5 means twice as long. Every type defaults to 1, the game's pace, so nothing changes until you raise the speeds you want.
+- **A speed for each kind of action**: 38 settings such as meals, snacks, sleep, naps, reading, toilet, cleaning, harvesting, repairs, searching and traps, sorted into ten sections (eating, health, hygiene, rest, leisure, chores, farming, building, scavenging, defense). Each section has an `All` setting that speeds up the whole section, and one `Everything` setting speeds up every action. 2 means the action takes half the game time, 0.5 means twice as long. Everything starts at 1, the game's pace, so nothing changes until you raise the speeds you want.
 - **Full benefits**: a sped-up action still gives everything it gives at the game's pace. Sleep twice as fast and you wake up as rested as after a full sleep. The mod runs the action's effect faster instead of cutting it short. Turn `FullBenefits` off to cut sped-up actions short instead, so they give only what they give in the shorter time. The progress bar over the character's head fills with the sped-up action.
 - **Free second search**: searching a container you have already searched opens it at once. No game time passes, so on an expedition it adds no exposure. Off by default; turn `FreeSecondSearch` on to use it.
-- **Reading**: one speed for reading books, magazines, newspapers, notes and letters, which the game spreads over several types (most books are entertainment, magazines and newspapers are food). At 0, the default, reading keeps its type's speed.
-- **Overrides by id**: set a speed for one single action by its id. An override beats the reading speed and its type's speed.
-- **Every action listed**: the mod writes `BepInEx\action-speed-actions.txt`, listing every action with its id, name, type, the game's time, the time with this mod, and why.
+- **Reading**: one speed for reading books, magazines, newspapers, notes and letters, wherever the game files them.
+- **Overrides by id**: set a speed for one single action by its id. An override beats every speed setting.
+- **Every action listed**: the mod writes `BepInEx\action-speed-actions.txt`, listing every action with its id, name, the setting it follows, the game's time, the time with this mod, and why.
 - **Walking speed**: you (the character you control), the robot and other people at your base each have a walking speed, 1 (the game's speed) by default. Enemies always walk at the game's speed. The walk animation keeps up with the faster walk.
 - **Crafting speed**: crafting at a workbench is timed apart from other actions, so it has its own speed. It defaults to 1, the game's pace, and at 1 the mod does not touch crafting at all. Brewing and cooking speeds are in the Machine Speed mod.
+- **Older settings carried over**: a settings file from 0.7 or older is moved to the new settings the first time 0.8 starts, so every action keeps the speed it had.
 - **Keeps up with the game**: if the game reloads its action table, the mod notices within a few seconds and writes its times back.
 - **Log file**: what the mod set up at startup and after each change of a setting, and the first craft, walk, sped-up action effect and free second search it changed, go to `BepInEx\action-speed.log`.
 
 Action Speed changes how much game time actions take. It writes no data of its own into your save, and it does not edit game files. It does change your game's time: with it on, you get more done in a day, and anything you save reflects that. The shortened length of a craft in progress is held by that craft, so it can end up in your save. You can remove the mod at any time; actions started after that take the game's own time again.
 
-Config keys are the game's English type names. Each one says in the config file what kind of actions it covers, in English and Chinese. Action ids work in any game language, and the action list shows names in the language the game is set to.
+Each setting says in the config file what kind of actions it covers, in English and Chinese. Action ids work in any game language, and the action list shows names in the language the game is set to.
 
 ## How it works
 
@@ -31,11 +32,9 @@ For each action, highest first:
 
 1. An action the table does not time (crafting, brewing, cooking and some others) is left alone. It shows as "not timed by this table" in the list.
 2. An action in `Overrides` takes its override speed.
-3. A reading action takes the `Reading` speed, when that is above 0.
-4. An action whose type speed is 1 keeps the game's time.
-5. Every other action takes its type's speed.
+3. Every other action takes the speed of the setting it belongs to: its own setting when that is above 0, else its section's `All` when that is above 0, else `Everything`. At 1 it keeps the game's time.
 
-With `FreeSecondSearch` on, a search of a container that has been searched before runs its effect so fast that it ends within a few frames, whatever its type speed or override.
+With `FreeSecondSearch` on, a search of a container that has been searched before runs its effect so fast that it ends within a few frames, whatever its speed or override.
 
 Crafting is set when each craft starts.
 
@@ -47,7 +46,7 @@ Crafting is set when each craft starts.
 - The workbench's progress bar may run at the game's pace when `Crafting` is above 1: the craft finishes early and the bar can jump to done.
 - A craft that is already running when you change a speed keeps the length it started with.
 - Overrides on crafting, brewing and cooking actions do nothing, because those are not timed by the action table. Use the `[Speed]` setting for crafting.
-- Sorting has no speed of its own. The timed "organize items" action (id 11) is in the `Other` type, so it is already sped up there, and `Overrides` can set it alone. Organizing through a container's panel has no fixed length: it lasts as long as the panel is open.
+- Organizing through a container's panel has no fixed length: it lasts as long as the panel is open, so `Organizing` only speeds up the timed actions such as Organize Items.
 - With `FullBenefits` off, speeding up an action also shortens what its effect gives or takes over that time.
 
 ## Requirements
@@ -76,7 +75,7 @@ Settings live in `BepInEx\config\com.dev.survivallog.actionspeed.cfg`, created t
 
 Built for Survival Log 1.1.19131 with BepInEx `6.0.0-be.788`.
 
-Check `BepInEx\LogOutput.log` for `===== Action Speed 0.7.1 started`. The line after it lists the action speeds in use, ending for example `full benefits on, free second search off`. Lines below it say what was hooked, such as `full benefits on, sped-up actions give everything they give at the game's pace`, `progress bars of sped-up actions fill with the action`, `walking speed x1.5 for you, x1 for the robot, x1 for survivors` and `crafting left at the game's pace`. A setting changed on the Mods screen writes its lines again. A line starting `could not hook` means a game update has changed that part of the game, and it stays at the game's pace until the mod is updated.
+Check `BepInEx\LogOutput.log` for `===== Action Speed 0.8.0 started`. The line after it lists the action speeds in use, such as `most actions x2, except Leisure/Reading x10`, ending for example `full benefits on, free second search off`. Lines below it say what was hooked, such as `full benefits on, sped-up actions give everything they give at the game's pace`, `progress bars of sped-up actions fill with the action`, `walking speed x1.5 for you, x1 for the robot, x1 for survivors` and `crafting left at the game's pace`. A setting changed on the Mods screen writes its lines again. A line starting `could not hook` means a game update has changed that part of the game, and it stays at the game's pace until the mod is updated.
 
 Once the game has loaded its tables, look for `N of M actions changed, every action is listed in action-speed-actions.txt`.
 
@@ -100,7 +99,7 @@ dotnet build src/ActionSpeed -c Release -p:GameDir="C:\path\to\Survival Log"
 
 `GameDir` is the game folder. The default in the project file is a local path you will almost certainly need to override. The output DLL is at `src\ActionSpeed\bin\Release\ActionSpeed.dll`.
 
-The unit tests cover the pure logic (how each action's time and effect clock are worked out, that a sped-up action with full benefits pays out the same, who walks at which speed, the speed checks and the scaling of crafts). They need nothing from the game:
+The unit tests cover the pure logic (which setting each action follows, how old settings move to the new ones, how each action's time and effect clock are worked out, that a sped-up action with full benefits pays out the same, who walks at which speed, the speed checks and the scaling of crafts). They need nothing from the game:
 
 ```
 dotnet test tests/ActionSpeed.Tests

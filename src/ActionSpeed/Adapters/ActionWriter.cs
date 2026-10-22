@@ -22,6 +22,8 @@ internal sealed class ActionWriter
     /// <summary>Each action's duration as the game first defined it, before this mod wrote over it.</summary>
     private readonly Dictionary<int, float> _gameDuring = new();
 
+    private readonly ActionNames _names = new(LocalText);
+
     private Dictionary<int, float> _planned = new();
     private SpeedSettings? _settings;
     private bool _isReopenFree;
@@ -49,9 +51,12 @@ internal sealed class ActionWriter
     {
         var settings = _settings;
         var config = BaseSingleton<ConfigManager>.IsInstanceCreated ? BaseSingleton<ConfigManager>.Instance : null;
-        var actions = config?._Config_Action_Dict;
 
-        if (settings == null || actions == null || actions.Count == 0) return;
+        if (settings == null || config == null) return;
+
+        var actions = config._Config_Action_Dict;
+
+        if (actions == null || actions.Count == 0) return;
 
         var rows = new List<Config_Action>(actions.Count);
 
@@ -62,7 +67,8 @@ internal sealed class ActionWriter
 
         var hasNewActions = rows.Any(action => !_planned.ContainsKey(action.ID));
 
-        if (hasNewActions) Plan(rows, settings);
+        if (hasNewActions) Plan(rows, settings, config);
+        else if (_names.HasNewlyResolved()) WriteList(rows, settings, config);
 
         var written = rows.Count(Write);
 
@@ -70,28 +76,51 @@ internal sealed class ActionWriter
         if (written > 0 && !hasNewActions) _log($"the game reloaded its action table, {written} durations written again");
     }
 
-    private void Plan(List<Config_Action> rows, SpeedSettings settings)
+    private void Plan(List<Config_Action> rows, SpeedSettings settings, ConfigManager config)
     {
         var isFirstPlan = _planned.Count == 0;
-        var decided = rows.Select(GameRow).Select(row => (Row: row, Decision: ActionSpeeds.Decide(row, settings))).ToList();
+        var decided = Decide(rows, settings, config);
         var changed = decided.Count(pair => pair.Decision.Lasts != pair.Row.GameDuring);
 
         _planned = decided.ToDictionary(pair => pair.Row.Id, pair => pair.Decision.During);
         _publishClocks(decided.Where(pair => pair.Decision.Clock != 1f).ToDictionary(pair => pair.Row.Id, pair => pair.Decision.Clock));
         _publishSearches(_isReopenFree ? rows.Where(action => EffectClock.IsSearch(action.EffectConfigID, _gameDuring[action.ID])).Select(action => action.ID).ToHashSet() : new HashSet<int>());
-        WriteList(decided.Select(pair => ActionSpeeds.Describe(pair.Row, pair.Decision, TypeName(pair.Row.Type))));
+        WriteList(decided);
 
         _log(isFirstPlan
             ? $"{changed} of {rows.Count} actions changed, every action is listed in {Path.GetFileName(_listPath)}"
             : $"the game's action table gained actions, {changed} of {rows.Count} now changed");
     }
 
-    /// <summary>The game's own duration, captured the first time the action is seen, so a speed is never applied on top of an earlier one.</summary>
-    private ActionRow GameRow(Config_Action action)
+    private List<(ActionRow Row, ActionDecision Decision)> Decide(List<Config_Action> rows, SpeedSettings settings, ConfigManager config) =>
+        rows.Select(action => GameRow(action, config)).Select(row => (Row: row, Decision: ActionSpeeds.Decide(row, settings))).ToList();
+
+    /// <summary>
+    /// The action as the game defines it: its own duration, captured the first time the action is seen so a speed
+    /// is never applied on top of an earlier one, and what its group is sorted by.
+    /// </summary>
+    private ActionRow GameRow(Config_Action action, ConfigManager config)
     {
         if (!_gameDuring.TryGetValue(action.ID, out var gameDuring)) _gameDuring[action.ID] = gameDuring = action.During;
 
-        return new ActionRow(action.ID, DisplayName(action), action.ActionType, gameDuring, ActionSpeeds.IsReading(action.ShowConfigID, action.FmodPath));
+        var item = ItemOf(action.ID, config);
+
+        return new ActionRow(action.ID, _names.Name(action.ID, action.Name ?? ""), action.ActionType, gameDuring,
+            ActionSpeeds.IsReading(action.ShowConfigID, action.FmodPath), EffectName(action.EffectConfigID, config), item?.Category ?? 0, item?.SubCategory ?? 0);
+    }
+
+    private static string EffectName(int effectId, ConfigManager config)
+    {
+        var effects = config._Config_Effect_Dict;
+
+        return effects != null && effects.TryGetValue(effectId, out var effect) && effect != null ? effect.ConfigName ?? "" : "";
+    }
+
+    private static Config_Item? ItemOf(int actionId, ConfigManager config)
+    {
+        var items = config._Config_Item_Dict;
+
+        return actionId > ActionGroups.ItemActionBase && items != null && items.TryGetValue(actionId - ActionGroups.ItemActionBase, out var item) ? item : null;
     }
 
     private bool Write(Config_Action action)
@@ -103,11 +132,16 @@ internal sealed class ActionWriter
         return true;
     }
 
-    private void WriteList(IEnumerable<string> lines)
+    /// <summary>Written again once the game's language has loaded, so names first listed as raw text keys show as the game shows them.</summary>
+    private void WriteList(List<Config_Action> rows, SpeedSettings settings, ConfigManager config) => WriteList(Decide(rows, settings, config));
+
+    private void WriteList(List<(ActionRow Row, ActionDecision Decision)> decided)
     {
+        var lines = decided.Select(pair => ActionSpeeds.Describe(pair.Row, pair.Decision));
+
         try
         {
-            File.WriteAllLines(_listPath, new[] { "id | name | type | game clock -> with this mod | why" }.Concat(lines));
+            File.WriteAllLines(_listPath, new[] { "id | name | setting | game clock -> with this mod | why" }.Concat(lines));
         }
         catch (Exception ex)
         {
@@ -115,23 +149,16 @@ internal sealed class ActionWriter
         }
     }
 
-    /// <summary>The name the game shows over the character's head; the raw table text if it cannot be looked up.</summary>
-    private static string DisplayName(Config_Action action)
+    /// <summary>The name the game shows over the character's head; null when it cannot be looked up yet.</summary>
+    private static string? LocalText(string key)
     {
-        var name = action.Name ?? "";
-
         try
         {
-            var shown = ConstantTextTools.GetLocalText(name);
-
-            return string.IsNullOrWhiteSpace(shown) ? name : shown;
+            return ConstantTextTools.GetLocalText(key);
         }
         catch (Exception)
         {
-            return name;
+            return null;
         }
     }
-
-    internal static string TypeName(int type) =>
-        type == 0 ? "FurnitureUse" : Enum.IsDefined(typeof(ActionType), type) ? ((ActionType)type).ToString() : $"type {type}";
 }

@@ -114,8 +114,12 @@ public class FullBenefitsTests
         Assert.False(Run(Sleep, Decide(Sleep, 2f, fullBenefits: false), FrameStep).HasDelayFired);
     }
 
-    private static ActionDecision Decide(EffectShape shape, float speed, bool fullBenefits) =>
-        ActionSpeeds.Decide(new ActionRow(5, "action", Food, shape.Life), new SpeedSettings(new Dictionary<int, float> { [Food] = speed }, new Dictionary<int, float>(), fullBenefits));
+    private static ActionDecision Decide(EffectShape shape, float speed, bool fullBenefits)
+    {
+        var row = new ActionRow(5, "action", Food, shape.Life);
+
+        return ActionSpeeds.Decide(row, new SpeedSettings(new Dictionary<Group, float> { [ActionGroups.Of(row)] = speed }, new Dictionary<int, float>(), fullBenefits));
+    }
 
     /// <summary>
     /// One action's effect, frame by frame, the way the game's effect manager runs it. The table duration becomes

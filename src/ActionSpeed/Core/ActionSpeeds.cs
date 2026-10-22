@@ -9,13 +9,15 @@ namespace ActionSpeed.Core;
 /// <param name="Type">The game's ActionType, 0 for furniture use (the game leaves that bucket unnamed).</param>
 /// <param name="GameDuring">Game seconds the action takes; 0 or less marks an action timed by something else.</param>
 /// <param name="IsReading">The game plays its reading animation or sound for it: books, magazines, newspapers, notes and letters.</param>
-public readonly record struct ActionRow(int Id, string Name, int Type, float GameDuring, bool IsReading = false);
+/// <param name="Effect">The config name of the action's effect, such as Action/Install_Trap; empty when it has none.</param>
+/// <param name="ItemCategory">The game's ItemCategory of the item the action uses, 0 for an action that uses no item.</param>
+/// <param name="ItemSubCategory">The game's ItemSubCategory of that item, 0 when it has none.</param>
+public readonly record struct ActionRow(int Id, string Name, int Type, float GameDuring, bool IsReading = false, string Effect = "", int ItemCategory = 0, int ItemSubCategory = 0);
 
 public enum Reason
 {
     Changed,
     Overridden,
-    Reading,
     GameSpeed,
     TimedElsewhere,
 }
@@ -29,12 +31,12 @@ public readonly record struct ActionDecision(float During, float Clock, Reason R
     public float Lasts => During / Clock;
 }
 
-/// <param name="SpeedByType">Speed per ActionType; a type with no entry keeps the game's duration.</param>
-/// <param name="Overrides">Speed per action id, which beats the type's speed.</param>
+/// <param name="SpeedByGroup">Speed per group, already resolved through its section and the everything speed; a
+/// group with no entry keeps the game's duration.</param>
+/// <param name="Overrides">Speed per action id, which beats the group's speed.</param>
 /// <param name="FullBenefits">A sped-up action gives everything it gives at the game's pace, by running its effect
 /// faster; off, it is cut short and pays out only for the shorter time.</param>
-/// <param name="ReadingSpeed">Speed for every reading action, which beats the type's speed; null leaves reading to its type.</param>
-public sealed record SpeedSettings(IReadOnlyDictionary<int, float> SpeedByType, IReadOnlyDictionary<int, float> Overrides, bool FullBenefits, float? ReadingSpeed = null);
+public sealed record SpeedSettings(IReadOnlyDictionary<Group, float> SpeedByGroup, IReadOnlyDictionary<int, float> Overrides, bool FullBenefits);
 
 public sealed record ParsedOverrides(IReadOnlyDictionary<int, float> Speeds, IReadOnlyList<string> Rejected);
 
@@ -52,8 +54,8 @@ public static class ActionSpeeds
     public static float Clamp(float speed) => float.IsFinite(speed) ? Math.Clamp(speed, Slowest, Fastest) : 1f;
 
     /// <summary>
-    /// How an action runs at its speed. An override is the player naming one action, so it beats the reading speed,
-    /// which in turn beats the type's speed, because reading is spread over several types; an action timed by something else has no duration here to scale. With full benefits the table keeps the
+    /// How an action runs at its speed. An override is the player naming one action, so it beats the group's speed;
+    /// an action timed by something else has no duration here to scale. With full benefits the table keeps the
     /// game's duration and the effect's clock runs faster, so every payout and the end come sooner together; the
     /// table value is never divided as well, or the action would be cut short a second time.
     /// </summary>
@@ -63,19 +65,17 @@ public static class ActionSpeeds
 
         if (settings.Overrides.TryGetValue(row.Id, out var overridden)) return AtSpeed(row, overridden, settings.FullBenefits, Reason.Overridden);
 
-        if (row.IsReading && settings.ReadingSpeed is { } reading) return AtSpeed(row, reading, settings.FullBenefits, Reason.Reading);
-
-        if (!settings.SpeedByType.TryGetValue(row.Type, out var speed) || speed == 1f) return new ActionDecision(row.GameDuring, 1f, Reason.GameSpeed);
+        if (!settings.SpeedByGroup.TryGetValue(ActionGroups.Of(row), out var speed) || speed == 1f) return new ActionDecision(row.GameDuring, 1f, Reason.GameSpeed);
 
         return AtSpeed(row, speed, settings.FullBenefits, Reason.Changed);
     }
 
     /// <summary>Whether any action could run its effect on a faster or slower clock, which is when the clock needs hooking.</summary>
     public static bool NeedsClock(SpeedSettings settings) =>
-        settings.FullBenefits && settings.SpeedByType.Values.Concat(settings.Overrides.Values).Append(settings.ReadingSpeed ?? 1f).Any(speed => speed != 1f);
+        settings.FullBenefits && settings.SpeedByGroup.Values.Concat(settings.Overrides.Values).Any(speed => speed != 1f);
 
-    /// <summary>The reading setting: 0 or less, or not a number, leaves reading to its action type's speed.</summary>
-    public static float? ReadingSpeed(float configured) => float.IsFinite(configured) && configured > 0f ? Clamp(configured) : null;
+    /// <summary>A section or group speed: 0 or less, or not a number, follows the speed above it.</summary>
+    public static float? Follow(float configured) => float.IsFinite(configured) && configured > 0f ? Clamp(configured) : null;
 
     /// <summary>
     /// Whether an action is reading, by what the game shows for it: its reading animation (Config_Show
@@ -99,12 +99,12 @@ public static class ActionSpeeds
         return new ParsedOverrides(speeds, rejected);
     }
 
-    public static string Describe(ActionRow row, ActionDecision decision, string typeName)
+    public static string Describe(ActionRow row, ActionDecision decision)
     {
         var benefits = decision.Clock == 1f ? "" : ", full benefits";
         var cost = row.GameDuring <= 0f ? "not timed by this table" : $"{Minutes(row.GameDuring)} -> {Minutes(decision.Lasts)}{benefits}";
 
-        return $"{row.Id} | {row.Name} | {typeName} | {cost} | {decision.Reason}";
+        return $"{row.Id} | {row.Name} | {ActionGroups.Label(ActionGroups.Of(row))} | {cost} | {decision.Reason}";
     }
 
     private static ActionDecision AtSpeed(ActionRow row, float speed, bool isFullBenefits, Reason reason) =>
