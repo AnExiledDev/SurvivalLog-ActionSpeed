@@ -53,7 +53,7 @@ Crafting is set when each craft starts.
 
 ## Requirements
 
-- Survival Log 1.1.19131. Built for this version; a game update can break it until the mod is updated.
+- Survival Log 1.1.19611. Built for this version; a game update can break it until the mod is updated.
 - The [BepInEx Pack for Survival Log](https://www.nexusmods.com/survivallog/mods/12), the BepInEx 6 (IL2CPP) build for the game.
 - Optional: [Exiled's Toolkit](https://github.com/AnExiledDev/SurvivalLog-ExiledToolkit) 0.4.0 or newer. With it, settings changed on the Mod Manager's Mods screen take effect without restarting the game. Without it, they take effect at the next game start.
 
@@ -75,7 +75,7 @@ Settings live in `BepInEx\config\com.dev.survivallog.actionspeed.cfg`, created t
 
 ## Troubleshooting
 
-Built for Survival Log 1.1.19131 with BepInEx `6.0.0-be.788`.
+Built for Survival Log 1.1.19611 with BepInEx `6.0.0-be.788`.
 
 Check `BepInEx\LogOutput.log` for `===== Action Speed 0.9.0 started`. The line after it lists the action speeds in use, such as `most actions x2, except Leisure/Reading x10`, then for example `full benefits on, free second search off, work x1 for you, x1 for the robot, x1 for survivors`. Lines below it say what was hooked, such as `full benefits on, sped-up actions give everything they give at the game's pace`, `progress bars of sped-up actions fill with the action`, `walking speed x1.5 for you, x1 for the robot, x1 for survivors`, `expedition travel x2` and `crafting left at the game's pace`. A setting changed on the Mods screen writes its lines again. A line starting `could not hook` means a game update has changed that part of the game, and it stays at the game's pace until the mod is updated.
 
