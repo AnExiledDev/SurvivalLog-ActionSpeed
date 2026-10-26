@@ -50,6 +50,20 @@ public class ClockMemoTests
     }
 
     [Fact]
+    public void A_newly_loaded_game_forgets_every_effect_of_the_last()
+    {
+        var memo = new ClockMemo();
+
+        memo.Remember(7, 3f);
+        memo.Age();
+        memo.Remember(8, 3f);
+        memo.Clear();
+
+        Assert.False(memo.TryRecall(7, isFresh: false, out _));
+        Assert.False(memo.TryRecall(8, isFresh: false, out _));
+    }
+
+    [Fact]
     public void An_effect_that_ended_is_kept_through_one_age_and_forgotten_after_two()
     {
         var memo = new ClockMemo();

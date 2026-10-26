@@ -41,4 +41,11 @@ public sealed class ClockMemo
         (_older, _recent) = (_recent, _older);
         _recent.Clear();
     }
+
+    /// <summary>Forgets every effect, for a newly loaded game whose effect ids start over.</summary>
+    public void Clear()
+    {
+        _recent.Clear();
+        _older.Clear();
+    }
 }

@@ -20,8 +20,9 @@ internal static class WalkPatch
     private static readonly HashSet<Character> FirstWalksLogged = new();
 
     private static CharacterSpeeds _speeds = new(1f, 1f, 1f);
+    private static readonly HookSwitch Switch = new();
+
     private static Harmony? _harmony;
-    private static bool _isHooked;
     private static Action<string> _log = _ => { };
     private static Action<string> _logFileOnly = _ => { };
     private static int _failures;
@@ -36,20 +37,25 @@ internal static class WalkPatch
 
     /// <summary>
     /// Called on the main thread at start and after each change; walks started after it go at the new speeds. The hook
-    /// goes in the first time a speed is not the game's, and at the game's speed it leaves every walk alone.
+    /// goes in the first time a speed is not the game's, and at the game's speed it returns at once on every walk.
     /// </summary>
     public static void Use(CharacterSpeeds speeds)
     {
         _speeds = speeds;
 
-        if (speeds.IsGamePace)
+        if (Switch.Use(!speeds.IsGamePace))
+        {
+            if (!Hook()) return;
+
+            Switch.Placed();
+        }
+
+        if (!Switch.IsOn)
         {
             _log("walking speed left at the game's");
 
             return;
         }
-
-        if (!_isHooked && !Hook()) return;
 
         _log($"walking speed x{speeds.Player:0.##} for you, x{speeds.Robot:0.##} for the robot, x{speeds.Survivor:0.##} for survivors");
     }
@@ -72,15 +78,16 @@ internal static class WalkPatch
             return false;
         }
 
-        _isHooked = true;
-
         return true;
     }
 
-    /// <summary>Runs inside the game's own call; an escaping exception would reach native code.</summary>
+    /// <summary>
+    /// Runs inside the game's own call; an escaping exception would reach native code. While every speed is the
+    /// game's, it returns before looking up who is walking.
+    /// </summary>
     private static void ScaleWalk(AttributeComponent __instance, AttrName attrName, AttrName ratioName, ref float __result)
     {
-        if (attrName != AttrName.MoveSpeed || ratioName != AttrName.MoveSpeed_Ratio) return;
+        if (!Switch.IsOn || attrName != AttrName.MoveSpeed || ratioName != AttrName.MoveSpeed_Ratio) return;
 
         try
         {

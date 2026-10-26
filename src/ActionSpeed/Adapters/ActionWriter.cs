@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using ActionSpeed.Core;
 using GameCore.HotUpdate;
 using ActionTable = Il2CppSystem.Collections.Generic.Dictionary<int, GameCore.HotUpdate.Config_Action>;
@@ -11,11 +13,17 @@ namespace ActionSpeed.Adapters;
 /// <summary>
 /// Writes the chosen durations onto the game's action table, which every action reads its length from when it
 /// starts, and hands each action's effect clock to the effect hook. The table only exists once the game has loaded
-/// it, and a reload would bring back the game's durations, so each sweep checks whether the table was replaced or a few changed actions lost their duration, and only then
-/// rewrites the table.
+/// it, and a reload would bring back the game's durations, so each sweep checks whether the table was replaced, the
+/// language changed or a few changed actions lost their duration, and only then reads the table again. That read
+/// asks the game about every action, so it runs a slice per frame and writes the table once it is all read.
 /// </summary>
 internal sealed class ActionWriter
 {
+    private const string ListHeader = "id | name | setting | game clock -> with this mod | why";
+    private const double SliceMilliseconds = 2.0;
+
+    private static readonly long SliceTicks = (long)(SliceMilliseconds * Stopwatch.Frequency / 1000.0);
+
     private readonly string _listPath;
     private readonly Action<string> _log;
     private readonly Action<IReadOnlyDictionary<int, float>> _publishClocks;
@@ -25,15 +33,36 @@ internal sealed class ActionWriter
     private readonly Dictionary<int, float> _gameDuring = new();
 
     private readonly ActionNames _names = new(LocalText);
+    private readonly TableWatch _watch = new();
+
+    /// <summary>Made once, so a sweep and a slice allocate no delegate.</summary>
+    private readonly Func<int, float> _durationOf;
+    private readonly Func<bool> _isSliceSpent;
+    private readonly WaitCallback _writeLists;
 
     private Dictionary<int, float> _planned = new();
 
-    /// <summary>The table the last full write went to, and a few changed actions to check between full writes.</summary>
-    private TableStamp? _lastStamp;
-    private Dictionary<int, float> _canaries = new();
-
     private SpeedSettings? _settings;
     private bool _isReopenFree;
+
+    /// <summary>The table a sweep is checking, for <see cref="DurationOf"/>; null outside a sweep.</summary>
+    private ActionTable? _sweepTable;
+
+    /// <summary>The read in progress: the job, what it has read so far, and what it was started for.</summary>
+    private SlicedJob? _build;
+    private List<ReadAction> _read = new();
+    private TableStamp _buildStamp;
+    private SpeedSettings? _buildSettings;
+    private long _sliceEndsAt;
+
+    /// <summary>The language the action list was last written in.</summary>
+    private (long Map, int Count)? _listedLanguage;
+
+    /// <summary>The newest list waiting for the worker, whether the worker is running, and a failure it kept for the main thread.</summary>
+    private readonly object _listLock = new();
+    private List<(ActionRow Row, ActionDecision Decision)>? _pendingList;
+    private bool _isListWriting;
+    private string? _listFailure;
 
     public ActionWriter(string listPath, Action<string> log, Action<IReadOnlyDictionary<int, float>> publishClocks, Action<IReadOnlySet<int>> publishSearches)
     {
@@ -41,7 +70,13 @@ internal sealed class ActionWriter
         _log = log;
         _publishClocks = publishClocks;
         _publishSearches = publishSearches;
+        _durationOf = DurationOf;
+        _isSliceSpent = IsSliceSpent;
+        _writeLists = _ => WriteLists();
     }
+
+    /// <summary>A read of the table is in progress; <see cref="Continue"/> carries it on each frame.</summary>
+    public bool IsBuilding => _build != null;
 
     /// <summary>
     /// Called on the main thread at start and after each change. The next sweep plans every action again from the
@@ -52,24 +87,85 @@ internal sealed class ActionWriter
         _settings = settings;
         _isReopenFree = isReopenFree;
         _planned = new Dictionary<int, float>();
-        _lastStamp = null;
+        _watch.Forget();
+        _build = null;
     }
 
     public void Sweep()
     {
+        ReportListFailure();
+
         var settings = _settings;
         var config = BaseSingleton<ConfigManager>.IsInstanceCreated ? BaseSingleton<ConfigManager>.Instance : null;
 
-        if (settings == null || config == null) return;
+        if (settings == null || config == null || _build != null) return;
 
         var actions = config._Config_Action_Dict;
 
         if (actions == null || actions.Count == 0) return;
 
-        var stamp = new TableStamp(actions.Pointer.ToInt64(), actions.Count);
+        var language = config._customCache_k__BackingField?._LanguageMap_k__BackingField;
+        var stamp = new TableStamp(actions.Pointer.ToInt64(), actions.Count, language == null ? 0L : language.Pointer.ToInt64(), language?.Count ?? 0);
 
-        if (TableWatch.IsUnchanged(_lastStamp, stamp, Canaries(actions)) && !_names.HasNewlyResolved()) return;
+        _sweepTable = actions;
 
+        try
+        {
+            if (!_watch.NeedsWrite(stamp, _durationOf)) return;
+        }
+        finally
+        {
+            _sweepTable = null;
+        }
+
+        _read = new List<ReadAction>(actions.Count);
+        _buildStamp = stamp;
+        _buildSettings = settings;
+        _build = new SlicedJob(ReadSteps(actions, config, _read));
+        Continue();
+    }
+
+    /// <summary>Reads the next slice of the table; once it is all read, plans and writes it in the same frame.</summary>
+    public void Continue()
+    {
+        var build = _build;
+
+        if (build == null) return;
+
+        _sliceEndsAt = Stopwatch.GetTimestamp() + SliceTicks;
+
+        bool isDone;
+
+        try
+        {
+            isDone = build.Advance(_isSliceSpent);
+        }
+        catch (Exception)
+        {
+            _build = null;
+
+            throw;
+        }
+
+        if (!isDone) return;
+
+        _build = null;
+        Finish(_read, _buildStamp, _buildSettings!);
+        _read = new List<ReadAction>();
+    }
+
+    private bool IsSliceSpent() => Stopwatch.GetTimestamp() >= _sliceEndsAt;
+
+    /// <summary>A watched action's duration in the table now; -1 when it is missing, so it counts as changed.</summary>
+    private float DurationOf(int id) =>
+        _sweepTable != null && _sweepTable.TryGetValue(id, out var action) && action != null ? action._During_k__BackingField : -1f;
+
+    /// <summary>
+    /// The table's rows are gathered in one step, so no step holds the game's collection open across frames, then
+    /// each row is read in its own step: its name, its effect and its item ask the game several times each.
+    /// </summary>
+    private IEnumerable<bool> ReadSteps(ActionTable actions, ConfigManager config, List<ReadAction> read)
+    {
         var rows = new List<Config_Action>(actions.Count);
 
         foreach (var action in actions.Values)
@@ -77,102 +173,144 @@ internal sealed class ActionWriter
             if (action != null) rows.Add(action);
         }
 
-        var hasNewActions = rows.Any(action => !_planned.ContainsKey(action.ID));
+        var effects = config._Config_Effect_Dict;
+        var items = config._Config_Item_Dict;
 
-        if (hasNewActions) Plan(rows, settings, config);
-        else if (_names.HasNewlyResolved()) WriteList(rows, settings, config);
+        yield return true;
 
-        var written = rows.Count(Write);
+        foreach (var action in rows)
+        {
+            read.Add(ReadRow(action, effects, items));
+
+            yield return true;
+        }
+    }
+
+    /// <summary>Plans when the table holds actions not planned yet, writes the planned durations, and lists every action when that changed.</summary>
+    private void Finish(List<ReadAction> read, TableStamp stamp, SpeedSettings settings)
+    {
+        var hasNewActions = read.Any(action => !_planned.ContainsKey(action.Row.Id));
+        var isNewLanguage = _listedLanguage is not { } listed || listed.Map != stamp.Language || listed.Count != stamp.LanguageCount;
+        List<(ActionRow Row, ActionDecision Decision)>? decided = null;
+
+        if (hasNewActions || isNewLanguage) decided = read.Select(action => (Row: action.Row, Decision: ActionSpeeds.Decide(action.Row, settings))).ToList();
+
+        if (hasNewActions) Plan(read, decided!);
+
+        var written = read.Count(Write);
 
         // A sweep that just planned is writing that plan for the first time, and the plan has already been logged.
         if (written > 0 && !hasNewActions) _log($"the game reloaded its action table, {written} durations written again");
 
-        Remember(stamp);
+        if (decided != null)
+        {
+            QueueList(decided);
+            _listedLanguage = (stamp.Language, stamp.LanguageCount);
+        }
+
+        _watch.Written(stamp, _planned, _gameDuring);
     }
 
-    /// <summary>The watched actions as they are now; a missing one reads as duration -1, so it counts as changed.</summary>
-    private IEnumerable<Canary> Canaries(ActionTable actions) =>
-        _canaries.Select(canary => new Canary(canary.Value, actions.TryGetValue(canary.Key, out var action) && action != null ? action.During : -1f));
-
-    private void Remember(TableStamp stamp)
-    {
-        var changedIds = _planned.Where(pair => _gameDuring.TryGetValue(pair.Key, out var gameDuring) && gameDuring != pair.Value).Select(pair => pair.Key);
-
-        _lastStamp = stamp;
-        _canaries = TableWatch.PickCanaries(changedIds).ToDictionary(id => id, id => _planned[id]);
-    }
-
-    private void Plan(List<Config_Action> rows, SpeedSettings settings, ConfigManager config)
+    private void Plan(List<ReadAction> read, List<(ActionRow Row, ActionDecision Decision)> decided)
     {
         var isFirstPlan = _planned.Count == 0;
-        var decided = Decide(rows, settings, config);
         var changed = decided.Count(pair => pair.Decision.Lasts != pair.Row.GameDuring);
 
         _planned = decided.ToDictionary(pair => pair.Row.Id, pair => pair.Decision.During);
         _publishClocks(decided.Where(pair => pair.Decision.Clock != 1f).ToDictionary(pair => pair.Row.Id, pair => pair.Decision.Clock));
-        _publishSearches(_isReopenFree ? rows.Where(action => EffectClock.IsSearch(action.EffectConfigID, _gameDuring[action.ID])).Select(action => action.ID).ToHashSet() : new HashSet<int>());
-        WriteList(decided);
+        _publishSearches(_isReopenFree ? read.Where(action => EffectClock.IsSearch(action.EffectId, action.Row.GameDuring)).Select(action => action.Row.Id).ToHashSet() : new HashSet<int>());
 
         _log(isFirstPlan
-            ? $"{changed} of {rows.Count} actions changed, every action is listed in {Path.GetFileName(_listPath)}"
-            : $"the game's action table gained actions, {changed} of {rows.Count} now changed");
+            ? $"{changed} of {read.Count} actions changed, every action is listed in {Path.GetFileName(_listPath)}"
+            : $"the game's action table gained actions, {changed} of {read.Count} now changed");
     }
-
-    private List<(ActionRow Row, ActionDecision Decision)> Decide(List<Config_Action> rows, SpeedSettings settings, ConfigManager config) =>
-        rows.Select(action => GameRow(action, config)).Select(row => (Row: row, Decision: ActionSpeeds.Decide(row, settings))).ToList();
 
     /// <summary>
     /// The action as the game defines it: its own duration, captured the first time the action is seen so a speed
     /// is never applied on top of an earlier one, and what its group is sorted by.
     /// </summary>
-    private ActionRow GameRow(Config_Action action, ConfigManager config)
+    private ReadAction ReadRow(Config_Action action, Il2CppSystem.Collections.Generic.Dictionary<int, Config_Effect>? effects,
+        Il2CppSystem.Collections.Generic.Dictionary<int, Config_Item>? items)
     {
-        if (!_gameDuring.TryGetValue(action.ID, out var gameDuring)) _gameDuring[action.ID] = gameDuring = action.During;
+        var id = action.ID;
 
-        var item = ItemOf(action.ID, config);
+        if (!_gameDuring.TryGetValue(id, out var gameDuring)) _gameDuring[id] = gameDuring = action.During;
 
-        return new ActionRow(action.ID, _names.Name(action.ID, action.Name ?? ""), action.ActionType, gameDuring,
-            ActionSpeeds.IsReading(action.ShowConfigID, action.FmodPath), EffectName(action.EffectConfigID, config), item?.Category ?? 0, item?.SubCategory ?? 0);
+        var effectId = action.EffectConfigID;
+        var item = id > ActionGroups.ItemActionBase && items != null && items.TryGetValue(id - ActionGroups.ItemActionBase, out var found) ? found : null;
+        var effectName = effects != null && effects.TryGetValue(effectId, out var effect) && effect != null ? effect.ConfigName ?? "" : "";
+        var row = new ActionRow(id, _names.Name(action.Name ?? ""), action.ActionType, gameDuring,
+            ActionSpeeds.IsReading(action.ShowConfigID, action.FmodPath), effectName, item?.Category ?? 0, item?.SubCategory ?? 0);
+
+        return new ReadAction(action, row, effectId);
     }
 
-    private static string EffectName(int effectId, ConfigManager config)
+    /// <summary>Reads and writes the duration field itself: the game's property would cost a runtime call per action.</summary>
+    private bool Write(ReadAction read)
     {
-        var effects = config._Config_Effect_Dict;
+        if (!_planned.TryGetValue(read.Row.Id, out var during) || read.Action._During_k__BackingField == during) return false;
 
-        return effects != null && effects.TryGetValue(effectId, out var effect) && effect != null ? effect.ConfigName ?? "" : "";
-    }
-
-    private static Config_Item? ItemOf(int actionId, ConfigManager config)
-    {
-        var items = config._Config_Item_Dict;
-
-        return actionId > ActionGroups.ItemActionBase && items != null && items.TryGetValue(actionId - ActionGroups.ItemActionBase, out var item) ? item : null;
-    }
-
-    private bool Write(Config_Action action)
-    {
-        if (!_planned.TryGetValue(action.ID, out var during) || action.During == during) return false;
-
-        action.During = during;
+        read.Action._During_k__BackingField = during;
 
         return true;
     }
 
-    /// <summary>Written again once the game's language has loaded, so names first listed as raw text keys show as the game shows them.</summary>
-    private void WriteList(List<Config_Action> rows, SpeedSettings settings, ConfigManager config) => WriteList(Decide(rows, settings, config));
-
-    private void WriteList(List<(ActionRow Row, ActionDecision Decision)> decided)
+    /// <summary>The list is a few hundred lines of text, so it is built and written on a worker; only the newest one waiting is written.</summary>
+    private void QueueList(List<(ActionRow Row, ActionDecision Decision)> decided)
     {
-        var lines = decided.Select(pair => ActionSpeeds.Describe(pair.Row, pair.Decision));
+        lock (_listLock)
+        {
+            _pendingList = decided;
 
-        try
-        {
-            File.WriteAllLines(_listPath, new[] { "id | name | setting | game clock -> with this mod | why" }.Concat(lines));
+            if (_isListWriting) return;
+
+            _isListWriting = true;
         }
-        catch (Exception ex)
+
+        ThreadPool.QueueUserWorkItem(_writeLists);
+    }
+
+    /// <summary>Runs on a worker, which never logs: a failure is kept for the next sweep to report.</summary>
+    private void WriteLists()
+    {
+        while (TakePendingList() is { } decided)
         {
-            _log($"could not write {Path.GetFileName(_listPath)}: {ex.Message}");
+            try
+            {
+                File.WriteAllLines(_listPath, new[] { ListHeader }.Concat(decided.Select(pair => ActionSpeeds.Describe(pair.Row, pair.Decision))));
+            }
+            catch (Exception ex)
+            {
+                lock (_listLock) _listFailure = ex.Message;
+            }
         }
+    }
+
+    private List<(ActionRow Row, ActionDecision Decision)>? TakePendingList()
+    {
+        lock (_listLock)
+        {
+            var decided = _pendingList;
+
+            _pendingList = null;
+
+            if (decided == null) _isListWriting = false;
+
+            return decided;
+        }
+    }
+
+    private void ReportListFailure()
+    {
+        string? failure;
+
+        lock (_listLock)
+        {
+            failure = _listFailure;
+            _listFailure = null;
+        }
+
+        if (failure != null) _log($"could not write {Path.GetFileName(_listPath)}: {failure}");
     }
 
     /// <summary>The name the game shows over the character's head; null when it cannot be looked up yet.</summary>
@@ -187,4 +325,7 @@ internal sealed class ActionWriter
             return null;
         }
     }
+
+    /// <summary>One row of the table as read: the game's object, to write its duration, the row as planned, and its effect.</summary>
+    private readonly record struct ReadAction(Config_Action Action, ActionRow Row, int EffectId);
 }

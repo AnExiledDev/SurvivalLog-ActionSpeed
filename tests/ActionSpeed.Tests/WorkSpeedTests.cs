@@ -67,7 +67,7 @@ public class WorkSpeedTests
     [Fact]
     public void The_progress_bar_follows_the_work_speed()
     {
-        Assert.Equal(3f, WithWorkers(Workers).ClockOfAction(Sleep, () => false, () => Character.Robot));
+        Assert.Equal(3f, WithWorkers(Workers).ClockOfAction(Sleep, new Worker(Character.Robot)));
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public class WorkSpeedTests
     {
         var clock = WithWorkers(new CharacterSpeeds(1f, 1f, 1f));
 
-        Assert.Equal(5f, clock.ClockOfAction(UseToilet, () => false, () => throw new InvalidOperationException("owner looked up")));
+        Assert.Equal(5f, clock.ClockOfAction(UseToilet, new Worker(Who: null)));
     }
 
     private readonly record struct Effect(int Action, Character Who, bool IsTargetSearched = false) : IRunningEffect
@@ -88,10 +88,22 @@ public class WorkSpeedTests
 
         public long EffectId => 7;
 
+        public long WorldId => 1;
+
         public int? OwnersActionId() => Action;
+
+        public int TimeScale() => 60;
 
         public bool IsOwnersTargetSearched() => IsTargetSearched;
 
         public Character Owner() => Who;
+    }
+
+    /// <summary>Whose progress bar it is; a null worker fails when asked, for what must not look the owner up.</summary>
+    private readonly record struct Worker(Character? Who) : IEffectOwner
+    {
+        public bool IsOwnersTargetSearched() => false;
+
+        public Character Owner() => Who ?? throw new InvalidOperationException("owner looked up");
     }
 }

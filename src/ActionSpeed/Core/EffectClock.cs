@@ -3,9 +3,19 @@ using System.Collections.Generic;
 
 namespace ActionSpeed.Core;
 
+/// <summary>Who an action's effect or progress bar belongs to. Each member reads the game's memory, so it is asked only when needed.</summary>
+public interface IEffectOwner
+{
+    /// <summary>The owner's action is aimed at a container that has been searched before.</summary>
+    bool IsOwnersTargetSearched();
+
+    /// <summary>Who started the effect: the player, the robot, a survivor or anyone else.</summary>
+    Character Owner();
+}
+
 /// <summary>One effect as the game's per-frame effect update hands it over. Each member reads the game's memory, so
 /// <see cref="EffectClock"/> asks for as few as it can before it decides.</summary>
-public interface IRunningEffect
+public interface IRunningEffect : IEffectOwner
 {
     /// <summary>Started by an action, as opposed to a buff, a piece of furniture or the world.</summary>
     bool IsActionEffect { get; }
@@ -18,14 +28,14 @@ public interface IRunningEffect
     /// <summary>The game gives this id to a later effect once this one ends.</summary>
     long EffectId { get; }
 
+    /// <summary>The loaded game the effect runs in. Loading a save starts a new one, and its effect ids start over.</summary>
+    long WorldId { get; }
+
     /// <summary>The action the effect's owner is doing now, or null when the owner or its action cannot be found.</summary>
     int? OwnersActionId();
 
-    /// <summary>The owner's action is aimed at a container that has been searched before.</summary>
-    bool IsOwnersTargetSearched();
-
-    /// <summary>Who started the effect: the player, the robot, a survivor or anyone else.</summary>
-    Character Owner();
+    /// <summary>The chapter's time scale: game seconds per unit of effect time.</summary>
+    int TimeScale();
 }
 
 /// <summary>
@@ -56,17 +66,37 @@ public sealed class EffectClock
     private IReadOnlySet<int> _searchActions = new HashSet<int>();
     private CharacterSpeeds _workSpeeds = new(1f, 1f, 1f);
 
+    /// <summary>Nothing is sped up, slowed or free, so every effect keeps the game's clock without being read.</summary>
+    private bool _isGameClockOnly = true;
+
+    /// <summary>The loaded game the remembered clocks belong to.</summary>
+    private long _worldId;
+
     /// <summary>The clock of every action that does not run on the game's.</summary>
-    public void Publish(IReadOnlyDictionary<int, float> clockByAction) => _clockByAction = clockByAction;
+    public void Publish(IReadOnlyDictionary<int, float> clockByAction)
+    {
+        _clockByAction = clockByAction;
+        Settle();
+    }
 
     /// <summary>A search waits its length and then opens the bag; tidying up opens one at once and lasts until closed.</summary>
     public static bool IsSearch(int effectId, float gameDuring) => effectId == OpenBagEffect && gameDuring > 0f;
 
     /// <summary>The actions that search a container, which end at once when the container was searched before.</summary>
-    public void PublishSearches(IReadOnlySet<int> searchActions) => _searchActions = searchActions;
+    public void PublishSearches(IReadOnlySet<int> searchActions)
+    {
+        _searchActions = searchActions;
+        Settle();
+    }
 
     /// <summary>How fast the player, the robot and survivors do every action, on top of the action's own speed.</summary>
-    public void PublishWorkSpeeds(CharacterSpeeds workSpeeds) => _workSpeeds = workSpeeds;
+    public void PublishWorkSpeeds(CharacterSpeeds workSpeeds)
+    {
+        _workSpeeds = workSpeeds;
+        Settle();
+    }
+
+    private void Settle() => _isGameClockOnly = _clockByAction.Count == 0 && _searchActions.Count == 0 && _workSpeeds.IsGamePace;
 
     /// <summary>Called every few seconds so effects that ended are forgotten.</summary>
     public void ForgetEnded() => _memo.Age();
@@ -74,25 +104,51 @@ public sealed class EffectClock
     /// <summary>
     /// Only an effect an action started, timed by the action's length, runs on the action's clock. One that lasts
     /// until something ends it, or never counts down, has no length to finish sooner. An effect that has just
-    /// started may carry the id of one that ended, so it is looked up again.
+    /// started may carry the id of one that ended, so it is looked up again, and so is every effect after a save loads.
     /// </summary>
     public float ClockOf<TEffect>(TEffect effect) where TEffect : IRunningEffect
     {
-        if ((_clockByAction.Count == 0 && _searchActions.Count == 0 && _workSpeeds.IsGamePace) || !effect.IsActionEffect) return 1f;
+        if (_isGameClockOnly || !effect.IsActionEffect) return 1f;
 
         var fullLife = effect.FullLife;
 
         if (fullLife <= 0f) return 1f;
+
+        ForgetEarlierGame(effect.WorldId);
 
         var effectId = effect.EffectId;
         var isFresh = effect.LifeLeft == fullLife;
 
         if (_memo.TryRecall(effectId, isFresh, out var clock)) return clock;
 
-        clock = ClockOfAction(effect.OwnersActionId(), effect.IsOwnersTargetSearched, effect.Owner);
+        clock = ClockOfAction(effect.OwnersActionId(), effect);
         _memo.Remember(effectId, clock);
 
         return clock;
+    }
+
+    /// <summary>
+    /// The time step the effect takes this frame, and the clock it runs on. A frame with no time passing (the game
+    /// paused) reads nothing about the effect.
+    /// </summary>
+    public float StepOf<TEffect>(TEffect effect, float gameStep, out float clock) where TEffect : IRunningEffect
+    {
+        clock = 1f;
+
+        if (gameStep == 0f) return gameStep;
+
+        clock = ClockOf(effect);
+
+        return clock == 1f ? gameStep : Step(gameStep, clock, LongestStep(effect.TimeScale()), effect.LifeLeft);
+    }
+
+    /// <summary>Effect ids start over in a newly loaded game, so a clock remembered from the earlier one would be wrong.</summary>
+    private void ForgetEarlierGame(long worldId)
+    {
+        if (worldId == _worldId) return;
+
+        _worldId = worldId;
+        _memo.Clear();
     }
 
     /// <summary>
@@ -128,16 +184,16 @@ public sealed class EffectClock
     /// both keep the game's. Looking in a container a second time finds nothing new, so it costs no time, and no
     /// exposure on an expedition.
     /// </summary>
-    /// <param name="isTargetSearched">Asked only for a search, since it reads the game's memory.</param>
-    /// <param name="owner">Asked only when someone works at other than the game's pace, for the same reason.</param>
-    public float ClockOfAction(int? actionId, Func<bool> isTargetSearched, Func<Character> owner)
+    /// <param name="owner">Asked whether the target was searched only for a search, and who it is only when someone
+    /// works at other than the game's pace, since both read the game's memory.</param>
+    public float ClockOfAction<TOwner>(int? actionId, TOwner owner) where TOwner : IEffectOwner
     {
         if (actionId is not { } id) return 1f;
 
-        if (_searchActions.Contains(id) && isTargetSearched()) return Instant;
+        if (_searchActions.Contains(id) && owner.IsOwnersTargetSearched()) return Instant;
 
         var actionClock = _clockByAction.TryGetValue(id, out var clock) ? clock : 1f;
 
-        return _workSpeeds.IsGamePace ? actionClock : actionClock * Walking.SpeedFor(owner(), _workSpeeds);
+        return _workSpeeds.IsGamePace ? actionClock : actionClock * Walking.SpeedFor(owner.Owner(), _workSpeeds);
     }
 }

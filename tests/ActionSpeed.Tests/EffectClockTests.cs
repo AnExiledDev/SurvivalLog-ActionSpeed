@@ -104,13 +104,107 @@ public class EffectClockTests
         Assert.Equal(float.PositiveInfinity, EffectClock.LongestStep(timeScale: 0));
     }
 
-    private readonly record struct FakeEffect(bool IsActionEffect, float FullLife, float LifeLeft, long EffectId, int? OwnersAction, bool IsTargetSearched = false, Character Who = Character.Player) : IRunningEffect
+    [Fact]
+    public void A_running_effect_is_looked_up_again_after_a_save_loads()
+    {
+        var clock = Published();
+
+        clock.ClockOf(Started(7, UseToilet) with { LifeLeft = 50f });
+
+        // The loaded game reuses id 7 for an effect that is already part way through.
+        Assert.Equal(2f, clock.ClockOf(Started(7, Sleep) with { LifeLeft = 50f, WorldId = 2 }));
+    }
+
+    [Fact]
+    public void A_running_effect_keeps_its_clock_while_the_same_game_runs()
+    {
+        var clock = Published();
+
+        clock.ClockOf(Started(7, UseToilet) with { LifeLeft = 50f });
+
+        Assert.Equal(4f, clock.ClockOf(Started(7, Sleep) with { LifeLeft = 40f }));
+    }
+
+    [Fact]
+    public void While_nothing_is_sped_up_no_effect_is_read()
+    {
+        Assert.Equal(1f, new EffectClock().ClockOf(new UnreadableEffect()));
+    }
+
+    [Fact]
+    public void Settings_put_back_to_the_games_pace_stop_effects_being_read()
+    {
+        var clock = Published();
+
+        clock.Publish(new Dictionary<int, float>());
+
+        Assert.Equal(1f, clock.ClockOf(new UnreadableEffect()));
+    }
+
+    [Fact]
+    public void A_paused_frame_reads_nothing_and_takes_no_step()
+    {
+        Assert.Equal(0f, Published().StepOf(new UnreadableEffect(), 0f, out var clock));
+        Assert.Equal(1f, clock);
+    }
+
+    [Fact]
+    public void A_sped_up_effect_steps_by_its_clock_cut_to_the_shortest_payout()
+    {
+        // At a time scale of 60, the shortest payout period is 6 units of effect time.
+        Assert.Equal(4f, Published().StepOf(Started(7, UseToilet), 1f, out var clock));
+        Assert.Equal(4f, clock);
+        Assert.Equal(6f, Published().StepOf(Started(7, UseToilet), 2f, out _));
+    }
+
+    [Fact]
+    public void An_effect_on_the_game_clock_takes_the_games_own_step()
+    {
+        Assert.Equal(0.5f, Published().StepOf(Started(7, ownersAction: 999), 0.5f, out var clock));
+        Assert.Equal(1f, clock);
+    }
+
+    private readonly record struct FakeEffect(bool IsActionEffect, float FullLife, float LifeLeft, long EffectId, int? OwnersAction, bool IsTargetSearched = false, Character Who = Character.Player,
+        long WorldId = 1, int Scale = 60) : IRunningEffect
     {
         public int? OwnersActionId() => OwnersAction;
 
         public bool IsOwnersTargetSearched() => IsTargetSearched;
 
         public Character Owner() => Who;
+
+        public int TimeScale() => Scale;
+    }
+
+    private readonly record struct FakeOwner(bool IsTargetSearched, Character Who) : IEffectOwner
+    {
+        public bool IsOwnersTargetSearched() => IsTargetSearched;
+
+        public Character Owner() => Who;
+    }
+
+    /// <summary>An effect whose every read fails, for what must decide without reading the game's memory.</summary>
+    private readonly struct UnreadableEffect : IRunningEffect
+    {
+        public bool IsActionEffect => throw Read();
+
+        public float FullLife => throw Read();
+
+        public float LifeLeft => throw Read();
+
+        public long EffectId => throw Read();
+
+        public long WorldId => throw Read();
+
+        public int? OwnersActionId() => throw Read();
+
+        public int TimeScale() => throw Read();
+
+        public bool IsOwnersTargetSearched() => throw Read();
+
+        public Character Owner() => throw Read();
+
+        private static InvalidOperationException Read() => new("the effect was read");
     }
 
     private const int Search = 1919;
@@ -156,7 +250,7 @@ public class EffectClockTests
     [Fact]
     public void The_bar_of_a_second_search_is_shortened_with_it()
     {
-        Assert.True(EffectClock.BarSeconds(60f, WithSearches().ClockOfAction(Search, () => true, () => Character.Player)) < 0.1f);
+        Assert.True(EffectClock.BarSeconds(60f, WithSearches().ClockOfAction(Search, new FakeOwner(IsTargetSearched: true, Who: Character.Player))) < 0.1f);
     }
 
     [Theory]
@@ -197,8 +291,8 @@ public class EffectClockTests
 
         clock.Publish(new Dictionary<int, float> { [7] = 3f });
 
-        Assert.Equal(3f, clock.ClockOfAction(7, () => false, () => Character.Player));
-        Assert.Equal(1f, clock.ClockOfAction(8, () => false, () => Character.Player));
-        Assert.Equal(1f, clock.ClockOfAction(null, () => false, () => Character.Player));
+        Assert.Equal(3f, clock.ClockOfAction(7, new FakeOwner(IsTargetSearched: false, Who: Character.Player)));
+        Assert.Equal(1f, clock.ClockOfAction(8, new FakeOwner(IsTargetSearched: false, Who: Character.Player)));
+        Assert.Equal(1f, clock.ClockOfAction(null, new FakeOwner(IsTargetSearched: false, Who: Character.Player)));
     }
 }

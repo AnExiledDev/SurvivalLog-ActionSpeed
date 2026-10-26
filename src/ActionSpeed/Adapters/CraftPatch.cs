@@ -15,10 +15,11 @@ namespace ActionSpeed.Adapters;
 /// </summary>
 internal static class CraftPatch
 {
+    private static readonly HookSwitch Switch = new();
+
     private static KindSpeed _speed = KindSpeed.GamePace;
     private static Harmony? _harmony;
     private static Action<string> _log = _ => { };
-    private static bool _isHooked;
     private static HookFailures _failures = new(_ => { }, "");
     private static Action<string> _logFileOnly = _ => { };
     private static CraftBar _bar = new(KindSpeed.GamePace);
@@ -37,21 +38,26 @@ internal static class CraftPatch
     /// <summary>
     /// Called on the main thread at start and after each change; crafts started after it go at the new speed. The hooks
     /// go in the first time the speed is not the game's pace, which is what keeps the default timing exactly the game's;
-    /// once in, at the game's pace they leave the craft and its bar as the game set them.
+    /// once in, at the game's pace they return at once and leave the craft and its bar as the game set them.
     /// </summary>
     public static void Use(KindSpeed speed)
     {
         _speed = speed;
         _bar = new CraftBar(speed);
 
-        if (speed.IsGamePace)
+        if (Switch.Use(!speed.IsGamePace))
+        {
+            if (!Hook()) return;
+
+            Switch.Placed();
+        }
+
+        if (!Switch.IsOn)
         {
             _log("crafting left at the game's pace");
 
             return;
         }
-
-        if (!_isHooked && !Hook()) return;
 
         _log($"crafting x{speed.Speed:0.##}");
     }
@@ -74,8 +80,6 @@ internal static class CraftPatch
 
             return false;
         }
-
-        _isHooked = true;
 
         try
         {
@@ -101,6 +105,8 @@ internal static class CraftPatch
     {
         __state = null;
 
+        if (!Switch.IsOn) return;
+
         try
         {
             _bar.Starting(furnitureId);
@@ -114,6 +120,8 @@ internal static class CraftPatch
 
     private static void Shorten(ToolTableManager __instance, long furnitureId, Before? __state)
     {
+        if (!Switch.IsOn) return;
+
         var gameDuration = 0f;
         float? shortened = null;
 
@@ -143,11 +151,16 @@ internal static class CraftPatch
     }
 
     /// <summary>Runs after the start request even when it threw, which skips <see cref="Shorten"/>.</summary>
-    private static void EndStart() => _bar.StartEnded();
+    private static void EndStart()
+    {
+        if (Switch.IsOn) _bar.StartEnded();
+    }
 
     /// <summary>Runs inside the game's own call; an escaping exception would reach native code.</summary>
     private static void ShowShortened(BaseReduxAction __0)
     {
+        if (!Switch.IsOn) return;
+
         try
         {
             var result = __0?.TryCast<Ac_ToolTable_CheckResult>();

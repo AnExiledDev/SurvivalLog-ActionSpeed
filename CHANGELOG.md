@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.2
+
+- Smoother play after you set a speed back to 1. The mod no longer checks every action, walk or craft while nothing is sped up.
+- Smoother play with sped-up actions. The mod spends less time on each running action every frame.
+- Fixed: a short stutter when the game first loads its actions, when you change a setting and when you switch the game's language. The mod now reads the game's actions over several frames.
+- Made for Survival Log 1.1.19611.
+
 ## 0.9.1
 
 - Fixed: a short stutter every 5 seconds. The mod now checks the action table only when the game loads it again or a setting changes.

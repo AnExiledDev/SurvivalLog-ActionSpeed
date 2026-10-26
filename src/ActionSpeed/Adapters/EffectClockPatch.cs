@@ -4,6 +4,7 @@ using ActionSpeed.Core;
 using GameCore.HotUpdate;
 using GameCore.HotUpdate.Battle.Logic;
 using HarmonyLib;
+using Il2CppInterop.Runtime;
 
 namespace ActionSpeed.Adapters;
 
@@ -17,14 +18,21 @@ namespace ActionSpeed.Adapters;
 internal static class EffectClockPatch
 {
     private static readonly EffectClock Clock = new();
+    private static readonly HookSwitch Switch = new();
 
     private static Harmony? _harmony;
     private static Action<string> _log = _ => { };
-    private static bool _isHooked;
     private static HookFailures _failures = new(_ => { }, "");
     private static Action<string> _logFileOnly = _ => { };
     private static bool _hasLoggedFirstEffect;
     private static bool _hasLoggedFirstReopen;
+
+    /// <summary>Where each field the hook reads sits in an effect's memory, found once when the hook goes in.</summary>
+    private static int _argsTypeAt;
+    private static int _fullLifeAt;
+    private static int _lifeLeftAt;
+    private static int _ownerIdAt;
+    private static int _effectIdAt;
 
     /// <summary>Nothing is hooked until <see cref="Use"/> is given settings that need it.</summary>
     public static void Apply(Harmony harmony, Action<string> log, Action<string> logFileOnly)
@@ -38,20 +46,25 @@ internal static class EffectClockPatch
     /// <summary>
     /// Called on the main thread at start and after each change. The hook goes in the first time some action runs its
     /// effect faster or slower, or a second search is free, which keeps every effect on the game's clock until then;
-    /// once in, it leaves effects on the game's clock alone.
+    /// once in, it returns at once while no setting needs it.
     /// </summary>
     public static void Use(SpeedSettings settings, bool isReopenFree, CharacterSpeeds workSpeeds)
     {
         var needsClock = ActionSpeeds.NeedsClock(settings) || !workSpeeds.IsGamePace;
 
-        if (!needsClock && !isReopenFree)
+        if (Switch.Use(needsClock || isReopenFree))
+        {
+            if (!Hook()) return;
+
+            Switch.Placed();
+        }
+
+        if (!Switch.IsOn)
         {
             _log(settings.FullBenefits ? "every action effect runs on the game's clock" : "full benefits off, sped-up actions end early and give less");
 
             return;
         }
-
-        if (!_isHooked && !Hook()) return;
 
         _log(needsClock ? "sped-up actions give everything they give at the game's pace" : "action effects hooked for free second searches only");
     }
@@ -62,6 +75,8 @@ internal static class EffectClockPatch
 
         try
         {
+            FindFields();
+
             var target = AccessTools.Method(typeof(BTEffectManager), nameof(BTEffectManager.UpdateNode), new[] { typeof(BtConfig), typeof(EffectBtArgs), typeof(float), typeof(float) })
                          ?? throw new MissingMethodException("BTEffectManager.UpdateNode(BtConfig, EffectBtArgs, float, float)");
 
@@ -74,11 +89,27 @@ internal static class EffectClockPatch
             return false;
         }
 
-        _isHooked = true;
-
         PatchProgressBar(_harmony, _log);
 
         return true;
+    }
+
+    /// <summary>Each field is looked up on the class that declares it; a field the game no longer has stops the hook going in.</summary>
+    private static void FindFields()
+    {
+        _argsTypeAt = OffsetOf(Il2CppClassPointerStore<EffectBtArgs>.NativeClassPtr, "<ArgsType>k__BackingField");
+        _fullLifeAt = OffsetOf(Il2CppClassPointerStore<GameCore.HotUpdate.BtArgs>.NativeClassPtr, "<MaxLifeDuration>k__BackingField");
+        _lifeLeftAt = OffsetOf(Il2CppClassPointerStore<GameCore.HotUpdate.BtArgs>.NativeClassPtr, "<CurLifeDuration>k__BackingField");
+        _ownerIdAt = OffsetOf(Il2CppClassPointerStore<GameCore.HotUpdate.NodeArgs>.NativeClassPtr, "<OwnerId>k__BackingField");
+        _effectIdAt = OffsetOf(Il2CppClassPointerStore<GameCore.HotUpdate.BaseEntity>.NativeClassPtr, "<InstanceId>k__BackingField");
+    }
+
+    private static int OffsetOf(IntPtr declaringClass, string name)
+    {
+        var field = declaringClass == IntPtr.Zero ? IntPtr.Zero : IL2CPP.GetIl2CppField(declaringClass, name);
+        var offset = field == IntPtr.Zero ? 0 : (int)IL2CPP.il2cpp_field_get_offset(field);
+
+        return offset > 0 ? offset : throw new MissingFieldException("effect", name);
     }
 
     private static void PatchProgressBar(Harmony harmony, Action<string> log)
@@ -99,14 +130,15 @@ internal static class EffectClockPatch
     /// <summary>The bar is sized from the action's table length just as the action starts, so the owner's current action is the one it shows.</summary>
     private static void ShortenBar(BaseAgent __instance, ref float during)
     {
+        if (!Switch.IsOn) return;
+
         try
         {
             if (__instance == null) return;
 
             var action = AgentTools.GetAgentComponent<ActionComponent>(__instance);
-            var owner = __instance.InstanceId;
 
-            during = EffectClock.BarSeconds(during, Clock.ClockOfAction(action?.ActionConfig?.ID, () => IsTargetSearched(action), () => Characters.Of(owner)));
+            during = EffectClock.BarSeconds(during, Clock.ClockOfAction(action?.ActionConfig?.ID, new BarOwner(action, __instance.InstanceId)));
         }
         catch (Exception ex)
         {
@@ -134,19 +166,23 @@ internal static class EffectClockPatch
     /// <summary>Called every few seconds so effects that ended are forgotten.</summary>
     public static void ForgetEnded() => Clock.ForgetEnded();
 
-    /// <summary>Runs inside the game's own call, for every effect every frame; an escaping exception would reach native code.</summary>
-    private static void RunFaster(EffectBtArgs args, ref float deltaTime)
+    /// <summary>
+    /// Runs inside the game's own call, for every effect every frame; an escaping exception would reach native code.
+    /// While no setting needs it, it returns before reading anything.
+    /// </summary>
+    private static unsafe void RunFaster(BTEffectManager __instance, EffectBtArgs args, ref float deltaTime)
     {
+        if (!Switch.IsOn) return;
+
         try
         {
             if (args == null) return;
 
-            var effect = new RunningEffect(args);
-            var clock = Clock.ClockOf(effect);
+            var effect = new RunningEffect((byte*)args.Pointer, __instance);
+
+            deltaTime = Clock.StepOf(effect, deltaTime, out var clock);
 
             if (clock == 1f) return;
-
-            deltaTime = EffectClock.Step(deltaTime, clock, EffectClock.LongestStep(Toolset._TimeScale), effect.LifeLeft);
 
             if (clock == EffectClock.Instant && !_hasLoggedFirstReopen)
             {
@@ -166,37 +202,66 @@ internal static class EffectClockPatch
     }
 
     /// <summary>
-    /// Reads the game's fields straight from memory. Its property getters go through a runtime call that also
-    /// allocates, which adds up when every effect asks every frame.
+    /// Reads the game's fields straight from memory at the offsets found when the hook went in. Going through the
+    /// runtime for each field costs a native call per read, which adds up when every effect asks every frame.
     /// </summary>
-    private readonly struct RunningEffect : IRunningEffect
+    private readonly unsafe struct RunningEffect : IRunningEffect
     {
-        private readonly EffectBtArgs _args;
+        private readonly byte* _args;
+        private readonly BTEffectManager _manager;
 
-        public RunningEffect(EffectBtArgs args) => _args = args;
+        public RunningEffect(byte* args, BTEffectManager manager)
+        {
+            _args = args;
+            _manager = manager;
+        }
 
-        public bool IsActionEffect => _args._ArgsType_k__BackingField == EffectArgsType.Action;
+        public bool IsActionEffect => *(int*)(_args + _argsTypeAt) == (int)EffectArgsType.Action;
 
-        public float FullLife => _args._MaxLifeDuration_k__BackingField;
+        public float FullLife => *(float*)(_args + _fullLifeAt);
 
-        public float LifeLeft => _args._CurLifeDuration_k__BackingField;
+        public float LifeLeft => *(float*)(_args + _lifeLeftAt);
 
-        public long EffectId => _args._InstanceId_k__BackingField;
+        public long EffectId => *(long*)(_args + _effectIdAt);
+
+        /// <summary>The game builds a new effect manager with each loaded game, so its address tells one game from the next.</summary>
+        public long WorldId => _manager == null ? 0L : _manager.Pointer.ToInt64();
+
+        private long OwnerId => *(long*)(_args + _ownerIdAt);
 
         /// <summary>The game sets a character's current action just before starting its effect, so a fresh effect belongs to it.</summary>
         public int? OwnersActionId() => OwnersAction()?.ActionConfig?.ID;
 
         public bool IsOwnersTargetSearched() => IsTargetSearched(OwnersAction());
 
-        public Character Owner() => Characters.Of(_args._OwnerId_k__BackingField);
+        public Character Owner() => Characters.Of(OwnerId);
+
+        public int TimeScale() => Toolset._TimeScale;
 
         private ActionComponent? OwnersAction()
         {
             if (!BaseSingleton<BattleLogicWorld>.IsInstanceCreated) return null;
 
-            var owner = BaseSingleton<BattleLogicWorld>.Instance._AgentManager?.GetAgent(_args._OwnerId_k__BackingField);
+            var owner = BaseSingleton<BattleLogicWorld>.Instance._AgentManager?.GetAgent(OwnerId);
 
             return owner == null ? null : AgentTools.GetAgentComponent<ActionComponent>(owner);
         }
+    }
+
+    /// <summary>The character whose progress bar is being sized, and its current action.</summary>
+    private readonly struct BarOwner : IEffectOwner
+    {
+        private readonly ActionComponent? _action;
+        private readonly long _ownerId;
+
+        public BarOwner(ActionComponent? action, long ownerId)
+        {
+            _action = action;
+            _ownerId = ownerId;
+        }
+
+        public bool IsOwnersTargetSearched() => IsTargetSearched(_action);
+
+        public Character Owner() => Characters.Of(_ownerId);
     }
 }
