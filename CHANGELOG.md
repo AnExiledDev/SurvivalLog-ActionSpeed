@@ -16,7 +16,7 @@
 
 ## 0.7.1
 
-- After a game update, a hook that can no longer be placed is logged as an error, so the Mod Manager can mark the mod as maybe needing an update.
+- After a game update, Mod Manager can tell you if this mod may need an update.
 - Made for Survival Log 1.1.19131.
 
 ## 0.7.0
@@ -27,19 +27,23 @@
 
 ## 0.6.0
 
-- The Mods screen links this changelog.
+- Mod Manager's Mods screen links to this changelog.
 - Settings changed on the Mod Manager's Mods screen take effect at once. An action, walk or craft already under way keeps the length it started with.
-- The Mods screen shows the mod's name, description, category and links.
-- Exiled's Toolkit 0.4.0 or newer is optional. With it, settings changed on the Mods screen take effect without a restart; without it, at the next game start.
+- Mod Manager's Mods screen shows the mod's name, description, category and links.
+- Exiled's Toolkit 0.4.0 or newer is optional. With it, settings you change on the Mods screen take effect right away. Without it, they take effect the next time you start the game.
 
 ## 0.5.0
 
-The `Brewing` and `Cooking` settings moved to the new Machine Speed mod, which reads your values from this mod's config the first time it starts. Action Speed now covers what you do; Machine Speed covers how fast machines work.
+- The `Brewing` and `Cooking` settings moved to the new Machine Speed mod, which reads your values from this mod's config the first time it starts.
+- Action Speed now covers what you do, and Machine Speed covers how fast machines work.
 
 ## 0.4.2
 
-The workbench progress bar fills all the way when crafting is sped up. Before, the craft finished while the bar was still at about a fifth. No setting changed.
+- The workbench progress bar fills all the way when crafting is sped up. Before, the craft finished while the bar was still at about a fifth.
 
 ## 0.4.1
 
-First public release. Makes everyday actions like eating, using furniture and treatment take less game time without giving less, lets you, the robot and your survivors walk faster, and can speed up crafting, brewing and cooking.
+- First release.
+- Everyday actions like eating, using furniture and treatment take less game time, and still give as much.
+- You, the robot and your survivors can walk faster.
+- Crafting, brewing and cooking can be sped up.
