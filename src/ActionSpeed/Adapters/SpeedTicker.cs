@@ -12,7 +12,8 @@ public sealed class SpeedTicker : MonoBehaviour
     internal static ActionWriter? Writer;
     internal static Action<string> Log = _ => { };
 
-    private float _nextSweepAt;
+    /// <summary>Starts half a period in, so this sweep and other mods' 5 second sweeps fall on different frames.</summary>
+    private float _nextSweepAt = SweepSeconds / 2;
     private int _failures;
 
     public SpeedTicker(IntPtr pointer) : base(pointer)

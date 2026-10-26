@@ -4,13 +4,15 @@ using System.IO;
 using System.Linq;
 using ActionSpeed.Core;
 using GameCore.HotUpdate;
+using ActionTable = Il2CppSystem.Collections.Generic.Dictionary<int, GameCore.HotUpdate.Config_Action>;
 
 namespace ActionSpeed.Adapters;
 
 /// <summary>
 /// Writes the chosen durations onto the game's action table, which every action reads its length from when it
 /// starts, and hands each action's effect clock to the effect hook. The table only exists once the game has loaded
-/// it, and a reload would bring back the game's durations, so this runs on every sweep and rewrites what changed.
+/// it, and a reload would bring back the game's durations, so each sweep checks whether the table was replaced or a few changed actions lost their duration, and only then
+/// rewrites the table.
 /// </summary>
 internal sealed class ActionWriter
 {
@@ -25,6 +27,11 @@ internal sealed class ActionWriter
     private readonly ActionNames _names = new(LocalText);
 
     private Dictionary<int, float> _planned = new();
+
+    /// <summary>The table the last full write went to, and a few changed actions to check between full writes.</summary>
+    private TableStamp? _lastStamp;
+    private Dictionary<int, float> _canaries = new();
+
     private SpeedSettings? _settings;
     private bool _isReopenFree;
 
@@ -45,6 +52,7 @@ internal sealed class ActionWriter
         _settings = settings;
         _isReopenFree = isReopenFree;
         _planned = new Dictionary<int, float>();
+        _lastStamp = null;
     }
 
     public void Sweep()
@@ -57,6 +65,10 @@ internal sealed class ActionWriter
         var actions = config._Config_Action_Dict;
 
         if (actions == null || actions.Count == 0) return;
+
+        var stamp = new TableStamp(actions.Pointer.ToInt64(), actions.Count);
+
+        if (TableWatch.IsUnchanged(_lastStamp, stamp, Canaries(actions)) && !_names.HasNewlyResolved()) return;
 
         var rows = new List<Config_Action>(actions.Count);
 
@@ -74,6 +86,20 @@ internal sealed class ActionWriter
 
         // A sweep that just planned is writing that plan for the first time, and the plan has already been logged.
         if (written > 0 && !hasNewActions) _log($"the game reloaded its action table, {written} durations written again");
+
+        Remember(stamp);
+    }
+
+    /// <summary>The watched actions as they are now; a missing one reads as duration -1, so it counts as changed.</summary>
+    private IEnumerable<Canary> Canaries(ActionTable actions) =>
+        _canaries.Select(canary => new Canary(canary.Value, actions.TryGetValue(canary.Key, out var action) && action != null ? action.During : -1f));
+
+    private void Remember(TableStamp stamp)
+    {
+        var changedIds = _planned.Where(pair => _gameDuring.TryGetValue(pair.Key, out var gameDuring) && gameDuring != pair.Value).Select(pair => pair.Key);
+
+        _lastStamp = stamp;
+        _canaries = TableWatch.PickCanaries(changedIds).ToDictionary(id => id, id => _planned[id]);
     }
 
     private void Plan(List<Config_Action> rows, SpeedSettings settings, ConfigManager config)

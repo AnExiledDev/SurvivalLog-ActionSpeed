@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.1
+
+- Fixed: a short stutter every 5 seconds. The mod now checks the action table only when the game loads it again or a setting changes.
+- Made for Survival Log 1.1.19611.
+
 ## 0.9.0
 
 - New `[Work]` settings: `Speed` for you, `RobotSpeed` for robots and `SurvivorSpeed` for other people at your base. Each speeds up every action that character does, on top of the action's own speed, and the action still gives its full effect. All three start at 1, the game's pace.

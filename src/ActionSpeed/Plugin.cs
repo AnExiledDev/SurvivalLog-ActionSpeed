@@ -16,7 +16,7 @@ namespace ActionSpeed;
 public sealed class Plugin : BasePlugin
 {
     private const string Guid = "com.dev.survivallog.actionspeed";
-    private const string Version = "0.9.0";
+    private const string Version = "0.9.1";
     private const string ActionRange = "From 0.25 to 20: 1 is the game's pace, 2 is twice as fast.";
     private const string ActionRangeChinese = "范围 0.25 到 20：1 为游戏原速，2 为两倍速。";
     private const string WalkRange = "From 0.25 to 5: 1 is the game's speed, 2 is twice as fast.";
