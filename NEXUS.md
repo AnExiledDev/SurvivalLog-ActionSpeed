@@ -2,6 +2,8 @@ Name: Action Speed
 Summary: Make eating, sleeping, reading, chores, farming, crafting and every other action take less game time while still giving the full benefit, so a nap twice as fast leaves you just as rested. Set one speed for everything, per section, or for each of 38 actions, plus work and walking speed for you, the robot and survivors, and expedition travel time.
 
 Description (BBCode):
+[center][img]https://sldb.core-directive.com/media/save/1-save-safe.png[/img][/center]
+
 Short chores eat your day in Survival Log. Action Speed lets you choose how much game time each kind of action takes, and how fast you, the robot and other people at your base walk. Everything is set in one config file, and each setting there says what it covers.
 
 [b]New install? Nothing changes until you set it.[/b] Every setting starts at the game's own pace, so a fresh install plays exactly like the base game. Before you start playing, raise the speeds you want: on the Mod Manager's Mods screen, or in [i]BepInEx\config\com.dev.survivallog.actionspeed.cfg[/i] while the game is closed (the file appears after the game has started once with the mod). Already have a config file from an older version? Its speeds move to the new settings by themselves, so every action keeps the speed it had.
