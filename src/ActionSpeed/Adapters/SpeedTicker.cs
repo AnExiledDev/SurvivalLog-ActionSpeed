@@ -1,4 +1,5 @@
 using System;
+using Il2CppInterop.Runtime.Attributes;
 using UnityEngine;
 
 namespace ActionSpeed.Adapters;
@@ -63,6 +64,7 @@ public sealed class SpeedTicker : MonoBehaviour
         }
     }
 
+    [HideFromIl2Cpp]
     private void Report(Exception ex)
     {
         _failures++;

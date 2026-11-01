@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.3
+
+- Removed a harmless warning the mod logged when the game started.
+- Made for Survival Log 1.1.20151.
+
 ## 0.9.2
 
 - Smoother play after you set a speed back to 1. The mod no longer checks every action, walk or craft while nothing is sped up.
