@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using ActionSpeed.Core;
 using BepInEx.Configuration;
+using static ActionSpeed.Adapters.WorldRule;
 
 namespace ActionSpeed.Adapters;
 
@@ -96,9 +97,9 @@ internal sealed class ActionSettings
 
     public static ActionSettings Bind(ConfigFile config)
     {
-        var everything = config.Bind(ActionGroups.ActionsSection, LegacySettings.EverythingKey, 1f,
+        var everything = config.Bind(ActionGroups.ActionsSection, LegacySettings.EverythingKey, 1f, Rule(
             $"Speed of every action, unless a section's All or a single setting below says otherwise. {Range} 0 or less counts as 1.\n" +
-            $"所有动作的速度，除非某个分类的 All 或下面的单项另有设置。{RangeChinese}0 或更小按 1 计算。");
+            $"所有动作的速度，除非某个分类的 All 或下面的单项另有设置。{RangeChinese}0 或更小按 1 计算。"));
         var sections = ActionGroups.Sections.ToDictionary(section => section.Name, section => BindSection(config, section.Name));
         var groups = Enum.GetValues<Group>().ToDictionary(group => group, group => BindGroup(config, group));
 
@@ -197,9 +198,9 @@ internal sealed class ActionSettings
     {
         var (english, chinese) = SectionCovers[section];
 
-        return config.Bind(section, AllKey, 0f,
+        return config.Bind(section, AllKey, 0f, Rule(
             $"Speed of {english}, unless a single setting below says otherwise. {Range} 0 or less follows Everything in [Actions].\n" +
-            $"{chinese}的速度，除非下面的单项另有设置。{RangeChinese}0 或更小表示跟随 [Actions] 的 Everything。");
+            $"{chinese}的速度，除非下面的单项另有设置。{RangeChinese}0 或更小表示跟随 [Actions] 的 Everything。"));
     }
 
     private static ConfigEntry<float> BindGroup(ConfigFile config, Group group)
@@ -209,8 +210,8 @@ internal sealed class ActionSettings
         var follows = section == ActionGroups.ActionsSection ? "Everything" : $"{AllKey} in this section";
         var followsChinese = section == ActionGroups.ActionsSection ? "Everything" : $"本分类的 {AllKey}";
 
-        return config.Bind(section, group.ToString(), 0f,
+        return config.Bind(section, group.ToString(), 0f, Rule(
             $"{english} {Range} 0 or less follows {follows}.\n" +
-            $"{chinese}{RangeChinese}0 或更小表示跟随{followsChinese}。");
+            $"{chinese}{RangeChinese}0 或更小表示跟随{followsChinese}。"));
     }
 }

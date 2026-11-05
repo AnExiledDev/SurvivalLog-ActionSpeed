@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.10.0
+
+- Each world can keep its own speed settings: every setting except `Overrides`. With Exiled's Toolkit 0.17.0 or newer, pick them for a new world in Customizable Difficulty, or change them for the world you are playing on the Mod Manager's Mods screen. `Overrides` stays the same for every world.
+- Made for Survival Log 1.1.20151.
+
 ## 0.9.3
 
 - Removed a harmless warning the mod logged when the game started.

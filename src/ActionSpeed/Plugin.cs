@@ -8,6 +8,7 @@ using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Unity.IL2CPP;
 using HarmonyLib;
+using static ActionSpeed.Adapters.WorldRule;
 
 namespace ActionSpeed;
 
@@ -16,7 +17,7 @@ namespace ActionSpeed;
 public sealed class Plugin : BasePlugin
 {
     private const string Guid = "com.dev.survivallog.actionspeed";
-    private const string Version = "0.9.3";
+    private const string Version = "0.10.0";
     private const string ActionRange = "From 0.25 to 20: 1 is the game's pace, 2 is twice as fast.";
     private const string ActionRangeChinese = "范围 0.25 到 20：1 为游戏原速，2 为两倍速。";
     private const string WalkRange = "From 0.25 to 5: 1 is the game's speed, 2 is twice as fast.";
@@ -33,9 +34,9 @@ public sealed class Plugin : BasePlugin
         // Read before any Bind: binding a new key saves the file, which would hide that it came from an older version.
         var savedSettings = ActionSettings.ReadFile(Config.ConfigFilePath, log.Write);
         var actions = BindActions();
-        var isReopenFree = Config.Bind("Actions", "FreeSecondSearch", false,
+        var isReopenFree = Config.Bind("Actions", "FreeSecondSearch", false, Rule(
             "When true, searching a container you have already searched opens it at once: no time passes, so an expedition adds no exposure for it. When false, every search takes the game's time.\n" +
-            "设为 true 时，搜寻已经搜过的容器会立即打开：不花时间，外出探索时也不会因此增加暴露值。设为 false 时，每次搜寻都按游戏原本的时间进行。");
+            "设为 true 时，搜寻已经搜过的容器会立即打开：不花时间，外出探索时也不会因此增加暴露值。设为 false 时，每次搜寻都按游戏原本的时间进行。"));
         var walking = BindWalking();
         var crafting = BindKind("Crafting", "crafting at a workbench", "工作台手工制作");
         var travel = BindKind("Travel", "travel between home and an expedition place, both ways; the map shows the new time", "往返家与外出地点的路程，去程和回程都算；地图上显示新的时间");
@@ -73,9 +74,9 @@ public sealed class Plugin : BasePlugin
     private ActionEntries BindActions()
     {
         var speeds = ActionSettings.Bind(Config);
-        var isFullBenefits = Config.Bind("Actions", "FullBenefits", true,
+        var isFullBenefits = Config.Bind("Actions", "FullBenefits", true, Rule(
             "When true, a sped-up action still gives its full effect: a faster sleep rests you as much as a normal one. When false, a sped-up action ends early and gives only what it gave in that shorter time.\n" +
-            "设为 true 时，加速的动作仍有完整效果：睡得更快也能休息得和平常一样足。设为 false 时，加速的动作会提前结束，只获得这段较短时间内的效果。");
+            "设为 true 时，加速的动作仍有完整效果：睡得更快也能休息得和平常一样足。设为 false 时，加速的动作会提前结束，只获得这段较短时间内的效果。"));
         var overrides = Config.Bind("Actions", "Overrides", "",
             "Speeds for single actions, written as id:speed and separated by commas; these beat every speed setting. For example, 112:4 makes Use Toilet four times as fast. Every action and its id is listed in BepInEx\\action-speed-actions.txt.\n" +
             "单独设置某个动作的速度，格式为 id:速度，多个用英文逗号分隔，优先于所有速度设置。例如 112:4 让上厕所变为四倍速。所有动作及其 id 列在 BepInEx\\action-speed-actions.txt 中。");
@@ -94,30 +95,30 @@ public sealed class Plugin : BasePlugin
 
     private WalkEntries BindWalking()
     {
-        var player = Config.Bind("Walking", "Speed", 1f,
+        var player = Config.Bind("Walking", "Speed", 1f, Rule(
             $"How fast you walk, meaning the character you control. {WalkRange}\n" +
-            $"你的行走速度，也就是你操控的那个角色。{WalkRangeChinese}");
-        var robot = Config.Bind("Walking", "RobotSpeed", 1f,
+            $"你的行走速度，也就是你操控的那个角色。{WalkRangeChinese}"));
+        var robot = Config.Bind("Walking", "RobotSpeed", 1f, Rule(
             $"How fast robots move. {WalkRange}\n" +
-            $"机器人的移动速度。{WalkRangeChinese}");
-        var survivor = Config.Bind("Walking", "SurvivorSpeed", 1f,
+            $"机器人的移动速度。{WalkRangeChinese}"));
+        var survivor = Config.Bind("Walking", "SurvivorSpeed", 1f, Rule(
             $"How fast other people at your base walk. Enemies always keep the game's speed. {WalkRange}\n" +
-            $"基地里其他人的行走速度。敌人始终保持游戏原速。{WalkRangeChinese}");
+            $"基地里其他人的行走速度。敌人始终保持游戏原速。{WalkRangeChinese}"));
 
         return new WalkEntries(player, robot, survivor);
     }
 
     private WorkEntries BindWork()
     {
-        var player = Config.Bind("Work", "Speed", 1f,
+        var player = Config.Bind("Work", "Speed", 1f, Rule(
             $"How fast you do every action, meaning the character you control, on top of each action's own speed. The action still gives its full effect. {ActionRange} 0 or less counts as 1.\n" +
-            $"你做每个动作的速度，也就是你操控的那个角色，叠加在各动作自己的速度之上。动作仍有完整效果。{ActionRangeChinese}0 或更小按 1 计算。");
-        var robot = Config.Bind("Work", "RobotSpeed", 1f,
+            $"你做每个动作的速度，也就是你操控的那个角色，叠加在各动作自己的速度之上。动作仍有完整效果。{ActionRangeChinese}0 或更小按 1 计算。"));
+        var robot = Config.Bind("Work", "RobotSpeed", 1f, Rule(
             $"How fast robots do every action, on top of each action's own speed. The action still gives its full effect. {ActionRange} 0 or less counts as 1.\n" +
-            $"机器人做每个动作的速度，叠加在各动作自己的速度之上。动作仍有完整效果。{ActionRangeChinese}0 或更小按 1 计算。");
-        var survivor = Config.Bind("Work", "SurvivorSpeed", 1f,
+            $"机器人做每个动作的速度，叠加在各动作自己的速度之上。动作仍有完整效果。{ActionRangeChinese}0 或更小按 1 计算。"));
+        var survivor = Config.Bind("Work", "SurvivorSpeed", 1f, Rule(
             $"How fast other people at your base do every action, on top of each action's own speed. The action still gives its full effect. {ActionRange} 0 or less counts as 1.\n" +
-            $"基地里其他人做每个动作的速度，叠加在各动作自己的速度之上。动作仍有完整效果。{ActionRangeChinese}0 或更小按 1 计算。");
+            $"基地里其他人做每个动作的速度，叠加在各动作自己的速度之上。动作仍有完整效果。{ActionRangeChinese}0 或更小按 1 计算。"));
 
         return new WorkEntries(player, robot, survivor);
     }
@@ -132,9 +133,9 @@ public sealed class Plugin : BasePlugin
 
     /// <summary>Work the game times outside its action table; 1 leaves the game's timing exactly as it is.</summary>
     private ConfigEntry<float> BindKind(string key, string work, string workChinese) =>
-        Config.Bind("Speed", key, 1f,
+        Config.Bind("Speed", key, 1f, Rule(
             $"Speed of {work}. {ActionRange} 0 or less counts as 1.\n" +
-            $"{workChinese}的速度。{ActionRangeChinese}0 或更小按 1 计算。");
+            $"{workChinese}的速度。{ActionRangeChinese}0 或更小按 1 计算。"));
 
     private static KindSpeed ReadKind(string key, float value, Action<string> log)
     {
