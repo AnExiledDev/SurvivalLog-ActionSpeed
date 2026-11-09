@@ -82,7 +82,7 @@ internal static class WalkPatch
     }
 
     /// <summary>
-    /// Runs inside the game's own call; an escaping exception would reach native code. While every speed is the
+    /// Runs inside the game's call; an escaping exception would reach native code. While every speed is the
     /// game's, it returns before looking up who is walking.
     /// </summary>
     private static void ScaleWalk(AttributeComponent __instance, AttrName attrName, AttrName ratioName, ref float __result)

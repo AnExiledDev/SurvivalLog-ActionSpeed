@@ -23,7 +23,7 @@ public enum Reason
 }
 
 /// <param name="During">Game seconds written to the action table.</param>
-/// <param name="Clock">How fast the action's effect runs: 1 is the game's own clock, 2 runs its whole effect, payouts
+/// <param name="Clock">How fast the action's effect runs: 1 is the game's clock, 2 runs its whole effect, payouts
 /// and end alike, in half the time. Above 1 only with full benefits.</param>
 public readonly record struct ActionDecision(float During, float Clock, Reason Reason)
 {

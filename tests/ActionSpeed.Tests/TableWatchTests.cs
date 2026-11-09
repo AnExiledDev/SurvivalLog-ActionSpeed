@@ -8,7 +8,7 @@ public class TableWatchTests
 {
     private static readonly TableStamp Loaded = new(Actions: 1000, ActionCount: 700, Language: 5000, LanguageCount: 9000);
 
-    /// <summary>The game's own durations: 20 actions, every one 60 seconds long.</summary>
+    /// <summary>The game's durations: 20 actions, every one 60 seconds long.</summary>
     private static readonly Dictionary<int, float> GameDuring = Enumerable.Range(1, 20).ToDictionary(id => id, _ => 60f);
 
     /// <summary>The plan halves the even actions and leaves the odd ones at the game's length.</summary>

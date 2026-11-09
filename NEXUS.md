@@ -6,7 +6,7 @@ Description (BBCode):
 
 Short chores eat your day in Survival Log. Action Speed lets you choose how much game time each kind of action takes, and how fast you, the robot and other people at your base walk. Everything is set in one config file, and each setting there says what it covers.
 
-[b]New install? Nothing changes until you set it.[/b] Every setting starts at the game's own pace, so a fresh install plays exactly like the base game. Before you start playing, raise the speeds you want: on the Mod Manager's Mods screen, or in [i]BepInEx\config\com.dev.survivallog.actionspeed.cfg[/i] while the game is closed (the file appears after the game has started once with the mod). Already have a config file from an older version? Its speeds move to the new settings by themselves, so every action keeps the speed it had.
+[b]New install? Nothing changes until you set it.[/b] Every setting starts at the game's pace, so a fresh install plays exactly like the base game. Before you start playing, raise the speeds you want: on the Mod Manager's Mods screen, or in [i]BepInEx\config\com.dev.survivallog.actionspeed.cfg[/i] while the game is closed (the file appears after the game has started once with the mod). Already have a config file from an older version? Its speeds move to the new settings by themselves, so every action keeps the speed it had.
 
 [size=5]Main features[/size]
 [list]
@@ -21,7 +21,7 @@ Short chores eat your day in Survival Log. Action Speed lets you choose how much
 [*][b]Expedition travel[/b]: shorter or longer trips to expedition places and back. The map shows the new time. Off by default.[/*]
 [*][b]Crafting[/b]: its own speed. Off by default. Brewing and cooking speeds are in Machine Speed.[/*]
 [/list]
-Action Speed writes no data of its own into your save and does not edit game files. It does change how much game time things take, and your save reflects that. You can remove it at any time; actions started after that take the game's own time again.
+Action Speed writes no data of its own into your save and does not edit game files. It does change how much game time things take, and your save reflects that. You can remove it at any time; actions started after that take the game's time again.
 
 Every setting in the config file is explained in English and Chinese.
 

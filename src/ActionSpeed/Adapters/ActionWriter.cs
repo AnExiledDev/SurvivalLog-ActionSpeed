@@ -80,7 +80,7 @@ internal sealed class ActionWriter
 
     /// <summary>
     /// Called on the main thread at start and after each change. The next sweep plans every action again from the
-    /// game's own durations and writes the new ones; an action already running keeps the length it started with.
+    /// game's durations and writes the new ones; an action already running keeps the length it started with.
     /// </summary>
     public void Use(SpeedSettings settings, bool isReopenFree)
     {

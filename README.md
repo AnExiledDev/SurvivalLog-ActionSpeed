@@ -20,7 +20,7 @@ In Survival Log every action costs game time: eating, using furniture, treating 
 - **Keeps up with the game**: if the game reloads its action table, the mod notices within a few seconds and writes its times back.
 - **Log file**: what the mod set up at startup and after each change of a setting, and the first craft, walk, sped-up action effect and free second search it changed, go to `BepInEx\action-speed.log`.
 
-Action Speed changes how much game time actions take. It writes no data of its own into your save, and it does not edit game files. It does change your game's time: with it on, you get more done in a day, and anything you save reflects that. The shortened length of a craft in progress is held by that craft, so it can end up in your save. You can remove the mod at any time; actions started after that take the game's own time again.
+Action Speed changes how much game time actions take. It writes no data of its own into your save, and it does not edit game files. It does change your game's time: with it on, you get more done in a day, and anything you save reflects that. The shortened length of a craft in progress is held by that craft, so it can end up in your save. You can remove the mod at any time; actions started after that take the game's time again.
 
 Each setting says in the config file what kind of actions it covers, in English and Chinese. Action ids work in any game language, and the action list shows names in the language the game is set to.
 
@@ -72,7 +72,7 @@ Delete `ActionSpeed.dll` from the `BepInEx\plugins` folder. For a clean slate, a
 
 ## Configuration
 
-Settings live in `BepInEx\config\com.dev.survivallog.actionspeed.cfg`, created the first time the game starts with the mod. Change them in game on the Mod Manager's Mods screen, where they take effect at once, or edit the file while the game is closed. With Exiled's Toolkit 0.17.0 or newer, each world can keep its own speed settings: every setting except `Overrides`, which stays the same for every world. Pick them for a new world in Customizable Difficulty, or, while you play, change them for that world alone on the Mods screen. See [CONFIG.md](CONFIG.md) for every setting. Every setting starts at the game's own pace, so a new install changes nothing until you raise the speeds you want; set them before you start playing. The mod has no hotkeys. Without Exiled's Toolkit installed, changes made on the Mods screen take effect at the next game start instead.
+Settings live in `BepInEx\config\com.dev.survivallog.actionspeed.cfg`, created the first time the game starts with the mod. Change them in game on the Mod Manager's Mods screen, where they take effect at once, or edit the file while the game is closed. With Exiled's Toolkit 0.17.0 or newer, each world can keep its own speed settings: every setting except `Overrides`, which stays the same for every world. Pick them for a new world in Customizable Difficulty, or, while you play, change them for that world alone on the Mods screen. See [CONFIG.md](CONFIG.md) for every setting. Every setting starts at the game's pace, so a new install changes nothing until you raise the speeds you want; set them before you start playing. The mod has no hotkeys. Without Exiled's Toolkit installed, changes made on the Mods screen take effect at the next game start instead.
 
 ## Troubleshooting
 

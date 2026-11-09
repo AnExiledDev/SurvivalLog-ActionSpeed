@@ -51,7 +51,7 @@ public enum Group
 public sealed record Section(string Name, IReadOnlyList<Group> Groups);
 
 /// <summary>
-/// Sorts the game's actions into groups. The game's own ActionType lumps unlike work together (drug items are food,
+/// Sorts the game's actions into groups. The game's ActionType lumps unlike work together (drug items are food,
 /// opening a furniture package is the same type as salvaging a trinket), so the groups come from what the action
 /// is: its id for the game's fixed actions, its effect for families that share one, and the item's category for
 /// actions that use an item. Anything not placed by those falls back by its game type.

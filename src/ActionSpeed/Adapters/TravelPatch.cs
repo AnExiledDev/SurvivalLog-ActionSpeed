@@ -69,7 +69,7 @@ internal static class TravelPatch
         return true;
     }
 
-    /// <summary>Runs inside the game's own call; an escaping exception would reach native code.</summary>
+    /// <summary>Runs inside the game's call; an escaping exception would reach native code.</summary>
     private static void ScaleTrip(ref int __result)
     {
         try

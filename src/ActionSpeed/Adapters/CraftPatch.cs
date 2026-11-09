@@ -100,7 +100,7 @@ internal static class CraftPatch
     /// <summary>The bench before a start request; null when it could not be read, which leaves the craft alone.</summary>
     internal sealed record Before(CraftSnapshot? Bench);
 
-    /// <summary>Runs inside the game's own call; an escaping exception would reach native code.</summary>
+    /// <summary>Runs inside the game's call; an escaping exception would reach native code.</summary>
     private static void Remember(ToolTableManager __instance, long furnitureId, out Before? __state)
     {
         __state = null;
@@ -156,7 +156,7 @@ internal static class CraftPatch
         if (Switch.IsOn) _bar.StartEnded();
     }
 
-    /// <summary>Runs inside the game's own call; an escaping exception would reach native code.</summary>
+    /// <summary>Runs inside the game's call; an escaping exception would reach native code.</summary>
     private static void ShowShortened(BaseReduxAction __0)
     {
         if (!Switch.IsOn) return;

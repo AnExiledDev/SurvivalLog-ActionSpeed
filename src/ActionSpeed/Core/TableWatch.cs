@@ -52,7 +52,7 @@ public sealed class TableWatch
 
     /// <summary>
     /// Up to <see cref="CanaryCount"/> changed actions, spread across the id range, to check between full writes.
-    /// Only changed actions are watched: a reload puts the game's own duration back, which only shows on an action this mod changed.
+    /// Only changed actions are watched: a reload puts the game's duration back, which only shows on an action this mod changed.
     /// </summary>
     public static IReadOnlyList<int> PickCanaries(IEnumerable<int> changedIds)
     {

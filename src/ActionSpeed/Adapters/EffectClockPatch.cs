@@ -167,7 +167,7 @@ internal static class EffectClockPatch
     public static void ForgetEnded() => Clock.ForgetEnded();
 
     /// <summary>
-    /// Runs inside the game's own call, for every effect every frame; an escaping exception would reach native code.
+    /// Runs inside the game's call, for every effect every frame; an escaping exception would reach native code.
     /// While no setting needs it, it returns before reading anything.
     /// </summary>
     private static unsafe void RunFaster(BTEffectManager __instance, EffectBtArgs args, ref float deltaTime)
