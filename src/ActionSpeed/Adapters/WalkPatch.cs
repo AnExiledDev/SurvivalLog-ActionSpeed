@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using ActionSpeed.Core;
+using ExiledToolkit.Game;
 using GameCore.HotUpdate;
 using GameCore.HotUpdate.Battle.Logic;
-using HarmonyLib;
 
 namespace ActionSpeed.Adapters;
 
@@ -15,22 +15,19 @@ namespace ActionSpeed.Adapters;
 /// </summary>
 internal static class WalkPatch
 {
-    private const int MaxLoggedFailures = 3;
-
     private static readonly HashSet<Character> FirstWalksLogged = new();
 
     private static CharacterSpeeds _speeds = new(1f, 1f, 1f);
     private static readonly HookSwitch Switch = new();
 
-    private static Harmony? _harmony;
+    private static PatchKit? _hooks;
     private static Action<string> _log = _ => { };
     private static Action<string> _logFileOnly = _ => { };
-    private static int _failures;
 
     /// <summary>Nothing is hooked until <see cref="Use"/> is given a speed that is not the game's.</summary>
-    public static void Apply(Harmony harmony, Action<string> log, Action<string> logFileOnly)
+    public static void Apply(PatchKit hooks, Action<string> log, Action<string> logFileOnly)
     {
-        _harmony = harmony;
+        _hooks = hooks;
         _log = log;
         _logFileOnly = logFileOnly;
     }
@@ -60,26 +57,10 @@ internal static class WalkPatch
         _log($"walking speed x{speeds.Player:0.##} for you, x{speeds.Robot:0.##} for the robot, x{speeds.Survivor:0.##} for survivors");
     }
 
-    private static bool Hook()
-    {
-        if (_harmony == null) return false;
-
-        try
-        {
-            var target = AccessTools.Method(typeof(AttributeComponent), nameof(AttributeComponent.GetTotalValue_Float), new[] { typeof(AttrName), typeof(AttrName) })
-                         ?? throw new MissingMethodException("AttributeComponent.GetTotalValue_Float(AttrName, AttrName)");
-
-            _harmony.Patch(target, postfix: new HarmonyMethod(typeof(WalkPatch), nameof(ScaleWalk)));
-        }
-        catch (Exception ex)
-        {
-            _log($"could not hook walking speed, it stays at the game's: {ex.Message}");
-
-            return false;
-        }
-
-        return true;
-    }
+    private static bool Hook() =>
+        _hooks != null &&
+        _hooks.Patch(typeof(WalkPatch), typeof(AttributeComponent), nameof(AttributeComponent.GetTotalValue_Float), new[] { typeof(AttrName), typeof(AttrName) },
+            postfix: nameof(ScaleWalk), consequence: "walking speed stays at the game's");
 
     /// <summary>
     /// Runs inside the game's call; an escaping exception would reach native code. While every speed is the
@@ -104,9 +85,7 @@ internal static class WalkPatch
         }
         catch (Exception ex)
         {
-            _failures++;
-
-            if (_failures <= MaxLoggedFailures) _log($"scaling a walk failed, it goes at the game's speed (logged {_failures} of {MaxLoggedFailures}): {ex}");
+            _hooks?.Fail("scaling a walk", ex);
         }
     }
 }

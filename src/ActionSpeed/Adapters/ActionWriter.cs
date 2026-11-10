@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using ActionSpeed.Core;
+using ExiledToolkit.Kit;
 using GameCore.HotUpdate;
 using ActionTable = Il2CppSystem.Collections.Generic.Dictionary<int, GameCore.HotUpdate.Config_Action>;
 

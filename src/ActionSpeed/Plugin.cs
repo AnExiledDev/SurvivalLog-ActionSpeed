@@ -7,17 +7,28 @@ using ActionSpeed.Core;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Unity.IL2CPP;
+using ExiledToolkit;
+using ExiledToolkit.Game;
+using ExiledToolkit.Kit;
 using HarmonyLib;
 using static ActionSpeed.Adapters.WorldRule;
 
 namespace ActionSpeed;
 
 [BepInPlugin(Guid, "Action Speed", Version)]
-[BepInDependency(OptionalLive.ToolkitGuid, BepInDependency.DependencyFlags.SoftDependency)]
+[BepInDependency(ToolkitGuid, ">=0.19.0")]
 public sealed class Plugin : BasePlugin
 {
     private const string Guid = "com.dev.survivallog.actionspeed";
-    private const string Version = "0.10.0";
+    private const string Version = "0.10.1";
+    private const string ToolkitGuid = "com.dev.survivallog.exiledtoolkit";
+
+    /// <summary>Lines add up over a long session, so past 1 MB the file is moved to action-speed.log.1 and started again.</summary>
+    private const long MaxLogBytes = 1024 * 1024;
+
+    /// <summary>The walking hook runs on every walk, so each kind of failure is written three times at most.</summary>
+    private const int MaxLoggedFailures = 3;
+
     private const string ActionRange = "From 0.25 to 20: 1 is the game's pace, 2 is twice as fast.";
     private const string ActionRangeChinese = "范围 0.25 到 20：1 为游戏原速，2 为两倍速。";
     private const string WalkRange = "From 0.25 to 5: 1 is the game's speed, 2 is twice as fast.";
@@ -25,11 +36,7 @@ public sealed class Plugin : BasePlugin
 
     public override void Load()
     {
-        if (!OptionalLive.IsToolkitInstalled) Log.LogInfo(OptionalLive.MissingNote);
-
-        var log = new SpeedLog(Log, Path.Combine(Paths.BepInExRootPath, "action-speed.log"));
-
-        log.TrimIfLarge();
+        var log = new ModLog(Log, "action-speed.log") { MaxFileBytes = MaxLogBytes };
 
         // Read before any Bind: binding a new key saves the file, which would hide that it came from an older version.
         var savedSettings = ActionSettings.ReadFile(Config.ConfigFilePath, log.Write);
@@ -41,17 +48,17 @@ public sealed class Plugin : BasePlugin
         var crafting = BindKind("Crafting", "crafting at a workbench", "工作台手工制作");
         var travel = BindKind("Travel", "travel between home and an expedition place, both ways; the map shows the new time", "往返家与外出地点的路程，去程和回程都算；地图上显示新的时间");
         var work = BindWork();
-        var harmony = new Harmony(Guid);
+        var hooks = new PatchKit(new Harmony(Guid), log.Write, MaxLoggedFailures);
         var writer = new ActionWriter(Path.Combine(Paths.BepInExRootPath, "action-speed-actions.txt"), log.Write, EffectClockPatch.Publish, EffectClockPatch.PublishSearches);
 
         log.Write($"===== Action Speed {Version} started");
         actions.Speeds.MoveOldSettings(savedSettings, Config, log.Write);
-        EffectClockPatch.Apply(harmony, log.Write, log.WriteFileOnly);
-        WalkPatch.Apply(harmony, log.Write, log.WriteFileOnly);
-        CraftPatch.Apply(harmony, log.Write, log.WriteFileOnly);
-        TravelPatch.Apply(harmony, log.Write, log.WriteFileOnly);
+        EffectClockPatch.Apply(hooks, log.Write, log.WriteFileOnly);
+        WalkPatch.Apply(hooks, log.Write, log.WriteFileOnly);
+        CraftPatch.Apply(hooks, log.Write, log.WriteFileOnly);
+        TravelPatch.Apply(hooks, log.Write, log.WriteFileOnly);
 
-        OptionalLive.Watch(() =>
+        LiveSettings.Watch(() =>
         {
             var settings = ReadActions(actions, log.Write);
             var workSpeeds = ReadWork(work, log.Write);
@@ -62,9 +69,9 @@ public sealed class Plugin : BasePlugin
             EffectClockPatch.Use(settings, isReopenFree.Value, workSpeeds);
         }, actions.All.Append(isReopenFree).Concat(work.All).ToArray());
 
-        OptionalLive.Watch(() => WalkPatch.Use(ReadWalking(walking)), walking.Player, walking.Robot, walking.Survivor);
-        OptionalLive.Watch(crafting, speed => CraftPatch.Use(ReadKind("Speed/Crafting", speed, log.Write)));
-        OptionalLive.Watch(travel, speed => TravelPatch.Use(ReadKind("Speed/Travel", speed, log.Write)));
+        LiveSettings.Watch(() => WalkPatch.Use(ReadWalking(walking)), walking.Player, walking.Robot, walking.Survivor);
+        LiveSettings.Watch(crafting, speed => CraftPatch.Use(ReadKind("Speed/Crafting", speed, log.Write)));
+        LiveSettings.Watch(travel, speed => TravelPatch.Use(ReadKind("Speed/Travel", speed, log.Write)));
 
         SpeedTicker.Log = log.Write;
         SpeedTicker.Writer = writer;

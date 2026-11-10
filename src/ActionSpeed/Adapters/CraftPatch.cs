@@ -1,8 +1,8 @@
 using System;
 using ActionSpeed.Core;
+using ExiledToolkit.Game;
 using GameCore.HotUpdate.Battle.Logic;
 using GameCore.HotUpdate.ReduxUI;
-using HarmonyLib;
 
 namespace ActionSpeed.Adapters;
 
@@ -18,20 +18,18 @@ internal static class CraftPatch
     private static readonly HookSwitch Switch = new();
 
     private static KindSpeed _speed = KindSpeed.GamePace;
-    private static Harmony? _harmony;
+    private static PatchKit? _hooks;
     private static Action<string> _log = _ => { };
-    private static HookFailures _failures = new(_ => { }, "");
     private static Action<string> _logFileOnly = _ => { };
     private static CraftBar _bar = new(KindSpeed.GamePace);
     private static bool _hasLoggedFirstCraft;
     private static bool _hasLoggedFirstBar;
 
     /// <summary>Nothing is hooked until <see cref="Use"/> is given a speed that is not the game's pace.</summary>
-    public static void Apply(Harmony harmony, Action<string> log, Action<string> logFileOnly)
+    public static void Apply(PatchKit hooks, Action<string> log, Action<string> logFileOnly)
     {
-        _harmony = harmony;
+        _hooks = hooks;
         _log = log;
-        _failures = new HookFailures(log, "shortening a craft");
         _logFileOnly = logFileOnly;
     }
 
@@ -64,35 +62,16 @@ internal static class CraftPatch
 
     private static bool Hook()
     {
-        if (_harmony == null) return false;
+        if (_hooks == null) return false;
 
-        try
-        {
-            var target = AccessTools.Method(typeof(ToolTableManager), nameof(ToolTableManager.StartProduction))
-                         ?? throw new MissingMethodException("ToolTableManager.StartProduction");
+        var isHooked = _hooks.Patch(typeof(CraftPatch), typeof(ToolTableManager), nameof(ToolTableManager.StartProduction),
+            prefix: nameof(Remember), postfix: nameof(Shorten), finalizer: nameof(EndStart), consequence: "crafting stays at the game's pace");
 
-            _harmony.Patch(target, prefix: new HarmonyMethod(typeof(CraftPatch), nameof(Remember)), postfix: new HarmonyMethod(typeof(CraftPatch), nameof(Shorten)),
-                finalizer: new HarmonyMethod(typeof(CraftPatch), nameof(EndStart)));
-        }
-        catch (Exception ex)
-        {
-            _log($"could not hook crafting, it stays at the game's pace: {ex.Message}");
+        if (!isHooked) return false;
 
-            return false;
-        }
-
-        try
-        {
-            // The reducer itself is compiled into this trigger, so a hook on the reducer never runs.
-            var target = AccessTools.Method(typeof(Reducer_Web_ToolTable), nameof(Reducer_Web_ToolTable.Trigger_RA_CheckResult))
-                         ?? throw new MissingMethodException("Reducer_Web_ToolTable.Trigger_RA_CheckResult");
-
-            _harmony.Patch(target, prefix: new HarmonyMethod(typeof(CraftPatch), nameof(ShowShortened)));
-        }
-        catch (Exception ex)
-        {
-            _log($"could not hook the workbench progress bar, it fills at the game's pace: {ex.Message}");
-        }
+        // The reducer itself is compiled into this trigger, so a hook on the reducer never runs.
+        _hooks.Patch(typeof(CraftPatch), typeof(Reducer_Web_ToolTable), nameof(Reducer_Web_ToolTable.Trigger_RA_CheckResult),
+            prefix: nameof(ShowShortened), consequence: "the workbench progress bar fills at the game's pace");
 
         return true;
     }
@@ -114,7 +93,7 @@ internal static class CraftPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _hooks?.Fail("reading a workbench before a craft", ex);
         }
     }
 
@@ -142,7 +121,7 @@ internal static class CraftPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _hooks?.Fail("shortening a craft", ex);
         }
         finally
         {
@@ -178,7 +157,7 @@ internal static class CraftPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _hooks?.Fail("showing a shortened craft on the workbench bar", ex);
         }
     }
 

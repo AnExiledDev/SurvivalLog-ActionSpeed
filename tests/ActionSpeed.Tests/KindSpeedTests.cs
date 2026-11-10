@@ -145,25 +145,3 @@ public class FreshCraftTests
         Assert.False(KindSpeeds.IsFreshCraft(new CraftSnapshot(Idle, 0f), new CraftSnapshot(KindSpeeds.Making, 0.2f)));
     }
 }
-
-public class DistinctFailuresTests
-{
-    [Fact]
-    public void A_failure_that_repeats_is_only_new_the_first_time()
-    {
-        var failures = new DistinctFailures();
-
-        Assert.True(failures.IsNew("NullReferenceException: bench"));
-        Assert.False(failures.IsNew("NullReferenceException: bench"));
-    }
-
-    [Fact]
-    public void A_different_failure_is_still_reported()
-    {
-        var failures = new DistinctFailures();
-
-        failures.IsNew("NullReferenceException: bench");
-
-        Assert.True(failures.IsNew("InvalidCastException: state"));
-    }
-}

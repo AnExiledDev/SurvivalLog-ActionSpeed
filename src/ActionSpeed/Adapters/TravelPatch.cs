@@ -1,7 +1,7 @@
 using System;
 using ActionSpeed.Core;
+using ExiledToolkit.Game;
 using GameCore.HotUpdate;
-using HarmonyLib;
 
 namespace ActionSpeed.Adapters;
 
@@ -13,20 +13,18 @@ namespace ActionSpeed.Adapters;
 internal static class TravelPatch
 {
     private static KindSpeed _speed = KindSpeed.GamePace;
-    private static Harmony? _harmony;
+    private static PatchKit? _hooks;
     private static bool _isHooked;
     private static Action<string> _log = _ => { };
     private static Action<string> _logFileOnly = _ => { };
-    private static HookFailures _failures = new(_ => { }, "");
     private static bool _hasLoggedFirstTrip;
 
     /// <summary>Nothing is hooked until <see cref="Use"/> is given a speed that is not the game's.</summary>
-    public static void Apply(Harmony harmony, Action<string> log, Action<string> logFileOnly)
+    public static void Apply(PatchKit hooks, Action<string> log, Action<string> logFileOnly)
     {
-        _harmony = harmony;
+        _hooks = hooks;
         _log = log;
         _logFileOnly = logFileOnly;
-        _failures = new HookFailures(log, "changing an expedition trip's time");
     }
 
     /// <summary>Called on the main thread at start and after each change; trips started after it take the new time.</summary>
@@ -48,25 +46,12 @@ internal static class TravelPatch
 
     private static bool Hook()
     {
-        if (_harmony == null) return false;
+        if (_hooks == null) return false;
 
-        try
-        {
-            var target = AccessTools.Method(typeof(MapPointRules), nameof(MapPointRules.GetTravelTime), new[] { typeof(Config_MapPoint) })
-                         ?? throw new MissingMethodException("MapPointRules.GetTravelTime(Config_MapPoint)");
+        _isHooked = _hooks.Patch(typeof(TravelPatch), typeof(MapPointRules), nameof(MapPointRules.GetTravelTime), new[] { typeof(Config_MapPoint) },
+            postfix: nameof(ScaleTrip), consequence: "expedition travel takes the game's time");
 
-            _harmony.Patch(target, postfix: new HarmonyMethod(typeof(TravelPatch), nameof(ScaleTrip)));
-        }
-        catch (Exception ex)
-        {
-            _log($"could not hook expedition travel, it takes the game's time: {ex.Message}");
-
-            return false;
-        }
-
-        _isHooked = true;
-
-        return true;
+        return _isHooked;
     }
 
     /// <summary>Runs inside the game's call; an escaping exception would reach native code.</summary>
@@ -85,7 +70,7 @@ internal static class TravelPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _hooks?.Fail("changing an expedition trip's time", ex);
         }
     }
 }

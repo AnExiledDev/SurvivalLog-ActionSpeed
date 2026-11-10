@@ -53,36 +53,36 @@ Crafting is set when each craft starts.
 
 ## Requirements
 
-- Survival Log 1.1.20151. Built for this version; a game update can break it until the mod is updated.
+- Survival Log 1.1.20719. Built for this version; a game update can break it until the mod is updated.
 - The [BepInEx Pack for Survival Log](https://www.nexusmods.com/survivallog/mods/12), the BepInEx 6 (IL2CPP) build for the game.
-- Optional: [Exiled's Toolkit](https://github.com/AnExiledDev/SurvivalLog-ExiledToolkit) 0.4.0 or newer. With it, settings changed on the Mod Manager's Mods screen take effect without restarting the game. Without it, they take effect at the next game start.
+- [Exiled's Toolkit](https://github.com/AnExiledDev/SurvivalLog-ExiledToolkit) 0.19.0 or newer. Action Speed does not load without it. It applies settings changed on the Mod Manager's Mods screen without restarting the game, and lets each world keep its own speed settings.
 - Optional: [Mod Manager](https://www.nexusmods.com/survivallog/mods/73). With it, you can change every setting in game on its Mods screen and see what each one does, without opening the config file.
 
 ## Install
 
 1. Install the [BepInEx Pack for Survival Log](https://www.nexusmods.com/survivallog/mods/12) (if no other mods were installed before, start the game once so BepInEx finishes setup, then quit).
-2. Optional, to change settings without a restart: install Exiled's Toolkit. Download `ExiledToolkit-x.y.z.zip` from [its latest release](https://github.com/AnExiledDev/SurvivalLog-ExiledToolkit/releases/latest) or from [Nexus Mods](https://www.nexusmods.com/survivallog/mods/61), and extract it into the game folder (the folder with `SurvivalLog.exe`).
+2. Install Exiled's Toolkit. Download `ExiledToolkit-x.y.z.zip` from [its latest release](https://github.com/AnExiledDev/SurvivalLog-ExiledToolkit/releases/latest) or from [Nexus Mods](https://www.nexusmods.com/survivallog/mods/61), and extract it into the game folder (the folder with `SurvivalLog.exe`).
 3. Download `ActionSpeed-x.y.z.zip` from the [latest release](https://github.com/AnExiledDev/SurvivalLog-ActionSpeed/releases/latest) or from [Nexus Mods](https://www.nexusmods.com/survivallog/mods/53).
 4. Extract the zip into the game folder (the folder with `SurvivalLog.exe`). It holds a `BepInEx` folder, so the DLL lands in the right place. When asked, merge the folders. The result should be:
    `C:\Program Files (x86)\Steam\steamapps\common\Survival Log\BepInEx\plugins\ActionSpeed.dll`
 
 ## Uninstall
 
-Delete `ActionSpeed.dll` from the `BepInEx\plugins` folder. For a clean slate, also delete `BepInEx\config\com.dev.survivallog.actionspeed.cfg`, `BepInEx\action-speed.log` and `BepInEx\action-speed-actions.txt`.
+Delete `ActionSpeed.dll` from the `BepInEx\plugins` folder. For a clean slate, also delete `BepInEx\config\com.dev.survivallog.actionspeed.cfg`, `BepInEx\action-speed.log`, `BepInEx\action-speed.log.1` and `BepInEx\action-speed-actions.txt`.
 
 ## Configuration
 
-Settings live in `BepInEx\config\com.dev.survivallog.actionspeed.cfg`, created the first time the game starts with the mod. Change them in game on the Mod Manager's Mods screen, where they take effect at once, or edit the file while the game is closed. With Exiled's Toolkit 0.17.0 or newer, each world can keep its own speed settings: every setting except `Overrides`, which stays the same for every world. Pick them for a new world in Customizable Difficulty, or, while you play, change them for that world alone on the Mods screen. See [CONFIG.md](CONFIG.md) for every setting. Every setting starts at the game's pace, so a new install changes nothing until you raise the speeds you want; set them before you start playing. The mod has no hotkeys. Without Exiled's Toolkit installed, changes made on the Mods screen take effect at the next game start instead.
+Settings live in `BepInEx\config\com.dev.survivallog.actionspeed.cfg`, created the first time the game starts with the mod. Change them in game on the Mod Manager's Mods screen, where they take effect at once, or edit the file while the game is closed. Each world can keep its own speed settings: every setting except `Overrides`, which stays the same for every world. Pick them for a new world in Customizable Difficulty, or, while you play, change them for that world alone on the Mods screen. See [CONFIG.md](CONFIG.md) for every setting. Every setting starts at the game's pace, so a new install changes nothing until you raise the speeds you want; set them before you start playing. The mod has no hotkeys.
 
 ## Troubleshooting
 
-Built for Survival Log 1.1.20151 with BepInEx `6.0.0-be.788`.
+Built for Survival Log 1.1.20719 with BepInEx `6.0.0-be.788`.
 
-Check `BepInEx\LogOutput.log` for `===== Action Speed 0.10.0 started`. The line after it lists the action speeds in use, such as `most actions x2, except Leisure/Reading x10`, then for example `full benefits on, free second search off, work x1 for you, x1 for the robot, x1 for survivors`. Lines below it say what was hooked, such as `full benefits on, sped-up actions give everything they give at the game's pace`, `progress bars of sped-up actions fill with the action`, `walking speed x1.5 for you, x1 for the robot, x1 for survivors`, `expedition travel x2` and `crafting left at the game's pace`. A setting changed on the Mods screen writes its lines again. A line starting `could not hook` means a game update has changed that part of the game, and it stays at the game's pace until the mod is updated.
+Check `BepInEx\LogOutput.log` for `===== Action Speed 0.10.1 started`. The line after it lists the action speeds in use, such as `most actions x2, except Leisure/Reading x10`, then for example `full benefits on, free second search off, work x1 for you, x1 for the robot, x1 for survivors`. Lines below it say what was hooked, such as `full benefits on, sped-up actions give everything they give at the game's pace`, `progress bars of sped-up actions fill with the action`, `walking speed x1.5 for you, x1 for the robot, x1 for survivors`, `expedition travel x2` and `crafting left at the game's pace`. A setting changed on the Mods screen writes its lines again. A line starting `could not hook` means a game update has changed that part of the game, and it stays at the game's pace until the mod is updated.
 
 Once the game has loaded its tables, look for `N of M actions changed, every action is listed in action-speed-actions.txt`.
 
-`BepInEx\action-speed.log` has the same lines with a timestamp each, and it is kept across restarts (past 1 MB, only the newest part is kept). It also records the first craft, walk and sped-up action effect the mod changed, on lines starting `first craft:`, `first walk` and `first sped-up effect:`, each with the game's value and the new one. The first free second search writes `first search of a container searched before, it ends at once`. There is one `first walk` line each for you, the robot and survivors. If a speed seems to do nothing, check for that line.
+`BepInEx\action-speed.log` has the same lines with a timestamp each, and it is kept across restarts (past 1 MB, it is moved to `action-speed.log.1` and started again). It also records the first craft, walk and sped-up action effect the mod changed, on lines starting `first craft:`, `first walk` and `first sped-up effect:`, each with the game's value and the new one. The first free second search writes `first search of a container searched before, it ends at once`. There is one `first walk` line each for you, the robot and survivors. If a speed seems to do nothing, check for that line.
 
 ## Feedback and bug reports
 
@@ -100,7 +100,7 @@ This is a BepInEx 6 IL2CPP plugin. It compiles against BepInEx and the game's IL
 dotnet build src/ActionSpeed -c Release -p:GameDir="C:\path\to\Survival Log"
 ```
 
-`GameDir` is the game folder. The default in the project file is a local path you will almost certainly need to override. The output DLL is at `src\ActionSpeed\bin\Release\ActionSpeed.dll`.
+`GameDir` is the game folder. The default in the project file is a local path you will almost certainly need to override. Compiling also needs Exiled's Toolkit 0.19.0 or newer: point `-p:ToolkitDll="C:\path\to\ExiledToolkit.dll"` at its DLL. The output DLL is at `src\ActionSpeed\bin\Release\ActionSpeed.dll`.
 
 The unit tests cover the pure logic (which setting each action follows, how old settings move to the new ones, how each action's time and effect clock are worked out, that a sped-up action with full benefits pays out the same, who walks at which speed, the speed checks and the scaling of crafts). They need nothing from the game:
 

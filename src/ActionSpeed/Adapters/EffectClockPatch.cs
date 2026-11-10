@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using ActionSpeed.Core;
+using ExiledToolkit.Game;
 using GameCore.HotUpdate;
 using GameCore.HotUpdate.Battle.Logic;
-using HarmonyLib;
 using Il2CppInterop.Runtime;
 
 namespace ActionSpeed.Adapters;
@@ -20,9 +20,8 @@ internal static class EffectClockPatch
     private static readonly EffectClock Clock = new();
     private static readonly HookSwitch Switch = new();
 
-    private static Harmony? _harmony;
+    private static PatchKit? _hooks;
     private static Action<string> _log = _ => { };
-    private static HookFailures _failures = new(_ => { }, "");
     private static Action<string> _logFileOnly = _ => { };
     private static bool _hasLoggedFirstEffect;
     private static bool _hasLoggedFirstReopen;
@@ -35,11 +34,10 @@ internal static class EffectClockPatch
     private static int _effectIdAt;
 
     /// <summary>Nothing is hooked until <see cref="Use"/> is given settings that need it.</summary>
-    public static void Apply(Harmony harmony, Action<string> log, Action<string> logFileOnly)
+    public static void Apply(PatchKit hooks, Action<string> log, Action<string> logFileOnly)
     {
-        _harmony = harmony;
+        _hooks = hooks;
         _log = log;
-        _failures = new HookFailures(log, "running an action's effect faster");
         _logFileOnly = logFileOnly;
     }
 
@@ -71,25 +69,28 @@ internal static class EffectClockPatch
 
     private static bool Hook()
     {
-        if (_harmony == null) return false;
+        const string keepsGameDuration = "sped-up actions keep the game's duration";
+
+        if (_hooks == null) return false;
 
         try
         {
             FindFields();
-
-            var target = AccessTools.Method(typeof(BTEffectManager), nameof(BTEffectManager.UpdateNode), new[] { typeof(BtConfig), typeof(EffectBtArgs), typeof(float), typeof(float) })
-                         ?? throw new MissingMethodException("BTEffectManager.UpdateNode(BtConfig, EffectBtArgs, float, float)");
-
-            _harmony.Patch(target, prefix: new HarmonyMethod(typeof(EffectClockPatch), nameof(RunFaster)));
         }
         catch (Exception ex)
         {
-            _log($"could not hook action effects, sped-up actions keep the game's duration: {ex.Message}");
+            _log($"{HookFailure.Prefix} action effects, {keepsGameDuration}: {ex.Message}");
 
             return false;
         }
 
-        PatchProgressBar(_harmony, _log);
+        var isHooked = _hooks.Patch(typeof(EffectClockPatch), typeof(BTEffectManager), nameof(BTEffectManager.UpdateNode), new[] { typeof(BtConfig), typeof(EffectBtArgs), typeof(float), typeof(float) },
+            prefix: nameof(RunFaster), consequence: keepsGameDuration);
+
+        if (!isHooked) return false;
+
+        _hooks.Patch(typeof(EffectClockPatch), typeof(BaseAgent), nameof(BaseAgent.ShowUnitHeadBar), prefix: nameof(ShortenBar),
+            done: "progress bars of sped-up actions fill with the action", consequence: "sped-up actions finish before their bar fills");
 
         return true;
     }
@@ -112,21 +113,6 @@ internal static class EffectClockPatch
         return offset > 0 ? offset : throw new MissingFieldException("effect", name);
     }
 
-    private static void PatchProgressBar(Harmony harmony, Action<string> log)
-    {
-        try
-        {
-            harmony.Patch(
-                AccessTools.Method(typeof(BaseAgent), nameof(BaseAgent.ShowUnitHeadBar)),
-                prefix: new HarmonyMethod(typeof(EffectClockPatch), nameof(ShortenBar)));
-            log("progress bars of sped-up actions fill with the action");
-        }
-        catch (Exception ex)
-        {
-            log($"could not hook the progress bar, sped-up actions finish before their bar fills: {ex.Message}");
-        }
-    }
-
     /// <summary>The bar is sized from the action's table length just as the action starts, so the owner's current action is the one it shows.</summary>
     private static void ShortenBar(BaseAgent __instance, ref float during)
     {
@@ -142,7 +128,7 @@ internal static class EffectClockPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _hooks?.Fail("sizing a sped-up action's progress bar", ex);
         }
     }
 
@@ -197,7 +183,7 @@ internal static class EffectClockPatch
         }
         catch (Exception ex)
         {
-            _failures.Report(ex);
+            _hooks?.Fail("running an action's effect faster", ex);
         }
     }
 

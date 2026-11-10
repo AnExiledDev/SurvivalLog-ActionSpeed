@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 
 namespace ActionSpeed.Core;
 
@@ -77,13 +76,4 @@ public static class KindSpeeds
     /// <param name="before">The bench before the request, null when the game had no record of it yet.</param>
     public static bool IsFreshCraft(CraftSnapshot? before, CraftSnapshot after) =>
         after.State == Making && after.MakingTime == 0f && before?.State != Making;
-}
-
-/// <summary>Lets a hook that can fail on every call log each distinct failure once instead of flooding the log.</summary>
-public sealed class DistinctFailures
-{
-    private readonly HashSet<string> _seen = new();
-
-    /// <summary>True the first time this failure is seen.</summary>
-    public bool IsNew(string failure) => _seen.Add(failure);
 }
