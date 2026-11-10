@@ -2,7 +2,8 @@ Name: Action Speed
 Summary: Make eating, sleeping, reading, chores, farming, crafting and every other action take less game time while still giving the full benefit, so a nap twice as fast leaves you just as rested. Set one speed for everything, per section, or for each of 38 actions, plus work and walking speed for you, the robot and survivors, and expedition travel time.
 
 Description (BBCode):
-[center][img]https://sldb.core-directive.com/media/save/1-save-safe.png[/img][/center]
+[center][img]https://sldb.core-directive.com/media/save/1-save-safe.png[/img]
+[img]https://sldb.core-directive.com/media/notice/off.png[/img][/center]
 
 Short chores eat your day in Survival Log. Action Speed lets you choose how much game time each kind of action takes, and how fast you, the robot and other people at your base walk. Everything is set in one config file, and each setting there says what it covers.
 
