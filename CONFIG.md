@@ -1,6 +1,6 @@
 # Action Speed settings
 
-Settings live in `BepInEx\config\com.dev.survivallog.actionspeed.cfg`, created the first time the game starts with the mod. Change them in game on the Mod Manager's Mods screen, where they take effect at once, or edit the file while the game is closed. Each world can keep its own speed settings: every setting except `Overrides`, which stays the same for every world. Pick them for a new world in Customizable Difficulty, or, while you play, change them for that world alone on the Mods screen. Delete the file to get the defaults back. Each setting in the file says what it does, in English and Chinese.
+Settings live in `BepInEx\config\com.dev.survivallog.actionspeed.cfg`, created the first time the game starts with the mod. Change them in game on the Mod Manager's Mods screen, where they take effect at once, or edit the file while the game is closed. Each world can keep its own speed settings, except `Overrides`, which is the same for every world. Pick them for a new world in Customizable Difficulty, or change them for the world you're playing on the Mods screen. Delete the file to get the defaults back. Each setting in the file says what it does, in English and Chinese.
 
 A speed of 1 is always the game's pace. 2 takes half the game time, 4 takes a quarter, 0.5 takes twice as long. What `0` does is different in each section, so it is noted under each table.
 
@@ -16,9 +16,9 @@ Every action and the setting it follows are listed in `BepInEx\action-speed-acti
 | --- | --- | --- |
 | `Everything` | `1` | Speed of every action, unless a section's `All` or a single setting says otherwise. `0` or less counts as 1. |
 | `Other` | `0` | Every action no other setting covers, such as Talk and switching electronics on and off. `0` follows `Everything`. |
-| `FullBenefits` | `true` | When true, a sped-up action still gives its full effect: a faster sleep rests you as much as a normal one. When false, a sped-up action ends early and gives only what it gave in that shorter time. |
+| `FullBenefits` | `true` | When true, a sped-up action still gives its full effect: a faster sleep rests you as much as a normal one. When false, a sped-up action ends early and gives only what it would in that shorter time. |
 | `Overrides` | empty | Speeds for single actions, written as `id:speed` and separated by commas, for example `112:4, 39:2`. An override beats every speed setting. `112:4` makes Use Toilet four times as fast. |
-| `FreeSecondSearch` | `false` | When true, searching a container you have already searched opens it at once: no game time passes, so on an expedition it adds no exposure. When false, every search takes the game's time (or its speed setting's or override's). |
+| `FreeSecondSearch` | `false` | When true, searching a container you have already searched opens it at once. No game time passes, so it adds no exposure on an expedition. When false, every search takes its usual time, set by its speed setting or override. |
 
 ### Sections
 
@@ -35,8 +35,8 @@ Every section has `All` (default `0`, follows `Everything`). Every single settin
 | `[Hygiene]` | `Toilet` | Use Toilet and the other toilet actions. |
 | | `Washing` | Wash Hands, Take a Bath, Brush Teeth and other washing up. |
 | `[Rest]` | `Sleep` | Sleep. |
-| | `Nap` | Nap, Snooze... and other short rests. |
-| `[Leisure]` | `Reading` | Books, magazines, newspapers, notes and letters, wherever they come from. An action counts as reading when the game plays its reading animation or sound for it. |
+| | `Nap` | Snooze..., Nap and other short rests. |
+| `[Leisure]` | `Reading` | Books, magazines, newspapers, notes and letters. An action counts as reading when the game plays its reading animation or sound for it. |
 | | `Games` | Play Video Games, Play Darts, Use Playing Cards and trying out electronics. |
 | | `Music` | Listen to Music, Listen to Radio and Put on Record. |
 | | `Dancing` | Dance. |
@@ -89,13 +89,13 @@ What 0 does here:
 
 ### Settings from 0.7 and older
 
-Older versions had one speed per game action type (`FurnitureUse`, `Food`, `Rest`, `Entertainment`, `Exercise`, `Social`, `Treatment`, `Move`, `Other`, `Free`, `RepairFurniture`) and a `Reading` speed. The first time 0.8 starts with such a file, it moves those values to the new settings so every action keeps the speed it had, then removes the old keys. The speed most actions shared becomes `Everything`, a section where most settings share a speed gets that as its `All`, and only the settings that differ get their own value. The log says what was moved. The old `[Speed]` `Brewing` and `Cooking` lines, which Machine Speed took over in 0.5, are removed too.
+Older versions had one speed per game action type (`FurnitureUse`, `Food`, `Rest`, `Entertainment`, `Exercise`, `Social`, `Treatment`, `Move`, `Other`, `Free`, `RepairFurniture`) and a `Reading` speed. The first time 0.8 or newer starts with such a file, it moves those values to the new settings so every action keeps the speed it had, then removes the old keys. The speed most actions shared becomes `Everything`, a section where most settings share a speed gets that as its `All`, and only the settings that differ get their own value. The log says what was moved. The old `[Speed]` `Brewing` and `Cooking` lines, which Machine Speed took over in 0.5, are removed too.
 
 ## Walking
 
 | Setting | Default | What it does |
 | --- | --- | --- |
-| `Speed` | `1` | How fast you walk, meaning the character you control. |
+| `Speed` | `1` | How fast the character you control walks. |
 | `RobotSpeed` | `1` | How fast robots move. |
 | `SurvivorSpeed` | `1` | How fast other people at your base walk. Enemies always keep the game's speed. |
 
@@ -105,11 +105,11 @@ Older versions had one speed per game action type (`FurnitureUse`, `Food`, `Rest
 
 | Setting | Default | What it does |
 | --- | --- | --- |
-| `Speed` | `1` | How fast you do every action, meaning the character you control. |
+| `Speed` | `1` | How fast the character you control does every action. |
 | `RobotSpeed` | `1` | How fast robots do every action. |
 | `SurvivorSpeed` | `1` | How fast other people at your base do every action. |
 
-A work speed adds to each action's own speed: with `Sleep` at 2 and your `Speed` at 2, you sleep four times as fast. The action still gives its full effect, even with `FullBenefits` off. Raiders and creatures always keep the game's pace. Each is held between 0.25 and 20, and `0` or a negative number counts as 1. When all three are exactly 1, they change nothing.
+A work speed stacks with each action's own speed. With `Sleep` at 2 and your `Speed` at 2, you sleep four times as fast. The action still gives its full effect, even with `FullBenefits` off. Raiders and creatures always keep the game's pace. Each is held between 0.25 and 20, and `0` or a negative number counts as 1. When all three are exactly 1, they change nothing.
 
 ## Speed
 
@@ -118,7 +118,7 @@ Crafting and expedition travel are timed apart from the action table, so they ha
 | Setting | Default | What it does |
 | --- | --- | --- |
 | `Crafting` | `1` | Speed of crafting at a workbench. 2 halves the time a craft takes. |
-| `Travel` | `1` | Speed of the trip between home and an expedition place, going out and coming home. 2 halves the trip. The map shows the new time. A vehicle's discount still applies on top. |
+| `Travel` | `1` | Speed of the trip between home and an expedition place, going out and coming home. 2 halves the trip. The map shows the new time. A vehicle still shortens the trip on top of this. |
 
 Each is held between 0.25 and 20. A value outside that range is pulled to the nearest end, and the log says so at startup and when the setting changes, for example `Speed/Crafting = 50 is outside 0.25 to 20, using 20`.
 

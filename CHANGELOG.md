@@ -1,13 +1,18 @@
 # Changelog
 
+## 0.10.2
+
+- Clearer wording in the settings and in the mod description on the Mods screen.
+- Made for Survival Log 1.1.20719.
+
 ## 0.10.1
 
-- Now uses Exiled's Toolkit for its shared parts, so it needs Exiled's Toolkit 0.19.0 or newer.
+- Action Speed now needs Exiled's Toolkit 0.19.0 or newer, because some of its parts moved into the Toolkit.
 - Made for Survival Log 1.1.20719.
 
 ## 0.10.0
 
-- Each world can keep its own speed settings: every setting except `Overrides`. With Exiled's Toolkit 0.17.0 or newer, pick them for a new world in Customizable Difficulty, or change them for the world you are playing on the Mod Manager's Mods screen. `Overrides` stays the same for every world.
+- Each world can keep its own speed settings, except `Overrides`, which stays the same for every world. With Exiled's Toolkit 0.17.0 or newer, pick them for a new world in Customizable Difficulty, or change them for the world you're playing on the Mod Manager's Mods screen.
 - Made for Survival Log 1.1.20151.
 
 ## 0.9.3
@@ -36,7 +41,7 @@
 
 - Action speeds are now set per kind of action instead of per game action type: 38 settings such as `Meals`, `Snacks`, `Drinks`, `Sleep`, `Nap`, `Reading`, `Toilet`, `Cleaning`, `Harvesting`, `Repairs`, `Searching` and `Traps`, in ten sections. Each section has an `All` setting for the whole section, and `Everything` in `[Actions]` sets every action at once. A setting at 0 follows the one above it.
 - Your old settings move over by themselves the first time the game starts: every action keeps the speed it had, and the old keys are removed from the config file. The log says what was moved.
-- The useless `Move` and `Free` settings are gone; those actions are timed by walking or not timed at all.
+- The `Move` and `Free` settings are gone. They did nothing, because walking times those actions or they are not timed at all.
 - The old `Brewing` and `Cooking` lines left in `[Speed]` since 0.5 are removed from the config file.
 - The action list shows action names in the game's language. Before, names could show as raw text keys when the list was written before the game's language had loaded.
 - The action list shows the setting each action follows, such as `Hygiene/Toilet`.
@@ -48,15 +53,15 @@
 
 ## 0.7.0
 
-- New `Reading` setting: one speed for reading books, magazines, newspapers, notes and letters, whatever their action type. It is 0 (off) by default, so reading keeps its type's speed until you set it. An override for a single action still beats it.
-- Every setting now starts at the game's behavior, so nothing changes until you raise what you want: furniture use, food, treatment and other speeds go from 2 to 1, all three walking speeds from 1.5 to 1, and `FreeSecondSearch` from on to off. A config file you already have keeps its values; delete it to get the new defaults.
-- Marked for game version 1.1.19131.
+- New `Reading` setting: one speed for reading books, magazines, newspapers, notes and letters. It is 0 (off) by default, so reading follows the other speed settings until you set it. An override for a single action still beats it.
+- Every setting now starts at the game's pace, so nothing changes until you raise what you want: furniture use, food, treatment and other speeds go from 2 to 1, all three walking speeds from 1.5 to 1, and `FreeSecondSearch` from on to off. A config file you already have keeps its values. Delete it to get the new defaults.
+- Made for Survival Log 1.1.19131.
 
 ## 0.6.0
 
-- Mod Manager's Mods screen links to this changelog.
+- The Mod Manager's Mods screen links to this changelog.
 - Settings changed on the Mod Manager's Mods screen take effect at once. An action, walk or craft already under way keeps the length it started with.
-- Mod Manager's Mods screen shows the mod's name, description, category and links.
+- The Mod Manager's Mods screen shows the mod's name, description, category and links.
 - Exiled's Toolkit 0.4.0 or newer is optional. With it, settings you change on the Mods screen take effect right away. Without it, they take effect the next time you start the game.
 
 ## 0.5.0
@@ -71,6 +76,6 @@
 ## 0.4.1
 
 - First release.
-- Everyday actions like eating, using furniture and treatment take less game time, and still give as much.
+- Everyday actions like eating, using furniture and treatment take less game time, and still give their full benefit.
 - You, the robot and your survivors can walk faster.
 - Crafting, brewing and cooking can be sped up.

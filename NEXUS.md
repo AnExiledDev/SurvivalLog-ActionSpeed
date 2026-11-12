@@ -1,33 +1,33 @@
 Name: Action Speed
-Summary: Make eating, sleeping, reading, chores, farming, crafting and every other action take less game time while still giving the full benefit, so a nap twice as fast leaves you just as rested. Set one speed for everything, per section, or for each of 38 actions, plus work and walking speed for you, the robot and survivors, and expedition travel time.
+Summary: Make eating, sleeping, reading, chores, farming, crafting and every other action take less game time while still giving the full benefit, so a nap twice as fast leaves you just as rested. Set one speed for everything, per section, or for each of 38 kinds of action, plus work and walking speed for you, the robot and survivors, and expedition travel time.
 
 Description (BBCode):
 [center][img]https://sldb.core-directive.com/media/save/1-save-safe.png[/img]
 [img]https://sldb.core-directive.com/media/notice/off.png[/img][/center]
 
-Short chores eat your day in Survival Log. Action Speed lets you choose how much game time each kind of action takes, and how fast you, the robot and other people at your base walk. Everything is set in one config file, and each setting there says what it covers.
+Short chores eat your day in Survival Log. Action Speed lets you choose how much game time each kind of action takes, and how fast you, the robot and other people at your base walk and work.
 
-[b]New install? Nothing changes until you set it.[/b] Every setting starts at the game's pace, so a fresh install plays exactly like the base game. Before you start playing, raise the speeds you want: on the Mod Manager's Mods screen, or in [i]BepInEx\config\com.dev.survivallog.actionspeed.cfg[/i] while the game is closed (the file appears after the game has started once with the mod). Already have a config file from an older version? Its speeds move to the new settings by themselves, so every action keeps the speed it had.
+[b]A new install changes nothing until you set it up.[/b] Every setting starts at the game's pace, so a fresh install plays exactly like the game without the mod. Raise the speeds you want on the Mod Manager's Mods screen, or in [i]BepInEx\config\com.dev.survivallog.actionspeed.cfg[/i] while the game is closed (the file appears after the game has started once with the mod). If you have a config file from an older version, its speeds move to the new settings by themselves, so every action keeps the speed it had.
 
 [size=5]Main features[/size]
 [list]
 [*][b]A speed for each kind of action[/b]: 38 settings such as meals, snacks, sleep, naps, toilet, cleaning, harvesting, repairs, searching and traps. Each of the ten sections (eating, health, hygiene, rest, leisure, chores, farming, building, scavenging, defense) has one setting for the whole section, and one setting speeds up everything. Raise only what you want faster.[/*]
 [*][b]Full benefits[/b]: a sped-up action still gives everything it gives at the game's pace. Sleep twice as fast and you wake up just as rested. You can turn this off to cut sped-up actions short instead.[/*]
 [*][b]Free second search[/b]: searching a container you have already searched opens it at once, so it costs no time and, on an expedition, no exposure. Off by default.[/*]
-[*][b]Reading[/b]: one speed for every book, magazine, newspaper, note and letter, wherever the game files them.[/*]
+[*][b]Reading[/b]: one speed for every book, magazine, newspaper, note and letter.[/*]
 [*][b]Single actions[/b]: set a speed for one action by its id.[/*]
-[*][b]Action list[/b]: every action with the setting it follows and its old and new time is written to a text file.[/*]
-[*][b]Faster walking[/b]: you, the robot and your survivors each have their own walking speed, the game's speed by default. Enemies keep the game's speed.[/*]
-[*][b]Work speed[/b]: you, the robot and your survivors can each work faster at everything they do, on top of each action's speed, still with the full effect. The game's pace by default.[/*]
-[*][b]Expedition travel[/b]: shorter or longer trips to expedition places and back. The map shows the new time. Off by default.[/*]
-[*][b]Crafting[/b]: its own speed. Off by default. Brewing and cooking speeds are in Machine Speed.[/*]
+[*][b]Action list[/b]: the mod writes a text file listing every action, the setting it follows, and its old and new time.[/*]
+[*][b]Faster walking[/b]: you, the robot and your survivors each have their own walking speed, which starts at the game's speed. Enemies keep the game's speed.[/*]
+[*][b]Work speed[/b]: you, the robot and your survivors can each do everything faster, on top of each action's speed, and every action still gives its full effect. It starts at the game's pace.[/*]
+[*][b]Expedition travel[/b]: make trips to expedition places and back shorter or longer. The map shows the new time. It starts at the game's pace.[/*]
+[*][b]Crafting[/b]: crafting at a workbench has its own speed, which starts at the game's pace. Brewing and cooking speeds are in Machine Speed.[/*]
 [/list]
-Action Speed writes no data of its own into your save and does not edit game files. It does change how much game time things take, and your save reflects that. You can remove it at any time; actions started after that take the game's time again.
+Action Speed doesn't write any data of its own into your save, and it doesn't edit game files. It does change how much game time things take, and your save reflects that. You can remove it at any time, and actions started after that take the game's time again.
 
 Every setting in the config file is explained in English and Chinese.
 
 [size=5]Known issues[/size]
-Action speeds apply to everyone doing an action, survivors and the robot included. The bar over a character's head fills with a sped-up action, but other times the game shows may still be the full length while the action itself ends sooner.
+Action speeds apply to everyone doing an action, survivors and the robot included. The bar over a character's head keeps up with a sped-up action, but other times the game shows may still show the full length, even though the action ends sooner. The workbench progress bar may show the game's time while a sped-up craft finishes sooner.
 
 [center][img]https://sldb.core-directive.com/img/mods-banner.jpg[/img]
 [size=4][url=https://www.nexusmods.com/survivallog/mods/73]Get Mod Manager[/url] to set up all your mods in game  |  [url=https://sldb.core-directive.com/en/]Open the Survival Log wiki[/url] for items, recipes and maps[/size][/center]
@@ -53,11 +53,11 @@ Action speeds apply to everyone doing an action, survivors and the robot include
 Delete [font=Courier New]ActionSpeed.dll[/font] from the [font=Courier New]BepInEx\plugins[/font] folder.
 
 [size=5]Configuration[/size]
-To change settings, edit [font=Courier New]BepInEx\config\com.dev.survivallog.actionspeed.cfg[/font] while the game is closed, or do it in game on the Mod Manager's Mods screen, where changes take effect at once (see [url=https://github.com/AnExiledDev/SurvivalLog-ActionSpeed/blob/main/CONFIG.md]CONFIG.md[/url] for every setting). Each world can keep its own speed settings (every setting except the single-action overrides): pick them for a new world in Customizable Difficulty, or, while you play, change them for that world alone on the Mods screen. Action ids are listed in [font=Courier New]BepInEx\action-speed-actions.txt[/font].
+To change settings, edit [font=Courier New]BepInEx\config\com.dev.survivallog.actionspeed.cfg[/font] while the game is closed, or do it in game on the Mod Manager's Mods screen, where changes take effect at once (see [url=https://github.com/AnExiledDev/SurvivalLog-ActionSpeed/blob/main/CONFIG.md]CONFIG.md[/url] for every setting). Each world can keep its own speed settings, except the overrides for single actions, which are the same for every world. Pick them for a new world in Customizable Difficulty, or change them for the world you're playing on the Mods screen. Action ids are listed in [font=Courier New]BepInEx\action-speed-actions.txt[/font].
 
 [size=5]Feedback[/size]
 Found a bug or have an idea? Come say hi on the [url=https://discord.gg/trTsyxUFqg]Core Directive Discord[/url], or post in this page's Posts tab. For bugs, please include [font=Courier New]BepInEx\LogOutput.log[/font] and [font=Courier New]BepInEx\action-speed.log[/font].
-To reach me directly, message [b]exiled.dev[/b] on Discord; you can find me in the [url=https://discord.gg/MZGg4gQAUe]official Survival Log Discord[/url]. I'm also on X as [url=https://x.com/AnExiledDev]@AnExiledDev[/url].
+To reach me directly, message [b]exiled.dev[/b] on Discord. You can find me in the [url=https://discord.gg/MZGg4gQAUe]official Survival Log Discord[/url]. I'm also on X as [url=https://x.com/AnExiledDev]@AnExiledDev[/url].
 
 [size=5]Source and license[/size]
 Open source under MIT: [url=https://github.com/AnExiledDev/SurvivalLog-ActionSpeed]github.com/AnExiledDev/SurvivalLog-ActionSpeed[/url]
@@ -65,24 +65,24 @@ Open source under MIT: [url=https://github.com/AnExiledDev/SurvivalLog-ActionSpe
 [line]
 [size=5]简体中文[/size]
 
-在 Survival Log 里，零碎的小事会把一天的时间吃光。Action Speed 让你自己决定每类动作要花多少游戏时间，以及你、机器人和基地里其他人走路有多快。所有设置都在一个配置文件里，每项设置都写明了它管哪些动作。
+在 Survival Log 里，零碎的小事会把一天的时间吃光。Action Speed 让你自己决定每类动作要花多少游戏时间，以及你、机器人和基地里其他人走路和干活有多快。
 
-[b]新安装？不设置就不会有任何变化。[/b]所有设置默认都是游戏原速，所以刚装好时和原版游戏完全一样。开始游玩前，请先调高你想加快的速度：可以在 Mod Manager 的「模组」界面里改，也可以在游戏关闭时编辑 [i]BepInEx\config\com.dev.survivallog.actionspeed.cfg[/i]（带着本模组启动过一次游戏后才会生成这个文件）。已经有旧版本的配置文件？里面的速度会自动转到新设置，每个动作保持原来的速度。
+[b]刚装好时什么都不会变，要你自己设置。[/b]所有设置默认都是游戏原速，所以刚装好时玩起来和没装这个模组完全一样。想加快哪些速度，可以在 Mod Manager 的「模组」界面里调高，也可以在游戏关闭时编辑 [i]BepInEx\config\com.dev.survivallog.actionspeed.cfg[/i]（带着本模组启动过一次游戏后才会生成这个文件）。如果你有旧版本的配置文件，里面的速度会自动转到新设置，每个动作保持原来的速度。
 
 [size=5]主要功能[/size]
 [list]
 [*][b]每种动作单独调速[/b]：共 38 项，例如正餐、零食、睡觉、打盹、如厕、打扫、收获、修理、搜索和陷阱。十个分类（吃喝、健康、卫生、休息、休闲、家务、种植、建造、搜刮、防御）各有一项统一设置，另有一项设置可以加快所有动作。只需调快你想加快的。[/*]
 [*][b]效果不减[/b]：加速后的动作仍有和原速时一样的全部效果。睡觉快一倍，醒来照样休息得一样足。也可以关掉此项，让加速的动作直接提前结束。[/*]
 [*][b]搜过的不再花时间[/b]：再次搜寻已经搜过的容器会立即打开，不花时间，外出探索时也不会增加暴露值。默认关闭。[/*]
-[*][b]阅读[/b]：所有书籍、杂志、报纸、笔记和信件共用一个速度，不论游戏把它们归在哪里。[/*]
+[*][b]阅读[/b]：所有书籍、杂志、报纸、笔记和信件共用一个速度。[/*]
 [*][b]单个动作[/b]：按 id 给某一个动作单独设置速度。[/*]
-[*][b]动作列表[/b]：每个动作所属的设置以及原来和现在的时长都会写进一个文本文件。[/*]
+[*][b]动作列表[/b]：模组会写一个文本文件，列出每个动作、它所属的设置，以及原来和现在的时长。[/*]
 [*][b]走得更快[/b]：你、机器人和幸存者各有自己的行走速度，默认为游戏原速。敌人保持游戏原速。[/*]
 [*][b]工作速度[/b]：你、机器人和幸存者可以各自加快所做的每个动作，叠加在各动作自己的速度之上，效果仍然完整。默认为游戏原速。[/*]
-[*][b]外出路程[/b]：缩短或延长前往外出地点和返回的路程。地图上显示新的时间。默认不改动。[/*]
-[*][b]制造[/b]：有独立的速度，默认不改动。酿酒和烹饪的速度在 Machine Speed 模组中。[/*]
+[*][b]外出路程[/b]：缩短或延长前往外出地点和返回的路程。地图上显示新的时间。默认为游戏原速。[/*]
+[*][b]制造[/b]：工作台制造有独立的速度，默认为游戏原速。酿酒和烹饪的速度在 Machine Speed 模组中。[/*]
 [/list]
-Action Speed 不会往存档里写入自己的数据，也不会修改游戏文件。但它确实改变了各种事情花费的游戏时间，存档也会反映这一点。随时可以移除；移除后新开始的动作会恢复游戏原本的时长。
+Action Speed 不会往存档里写入自己的数据，也不会修改游戏文件。但它确实改变了各种事情花费的游戏时间，存档也会反映这一点。随时可以移除，移除后新开始的动作会恢复游戏原本的时长。
 
 配置文件中的每项设置都有英文和中文说明。
 

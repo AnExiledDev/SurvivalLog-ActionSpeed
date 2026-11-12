@@ -20,7 +20,7 @@ namespace ActionSpeed;
 public sealed class Plugin : BasePlugin
 {
     private const string Guid = "com.dev.survivallog.actionspeed";
-    private const string Version = "0.10.1";
+    private const string Version = "0.10.2";
     private const string ToolkitGuid = "com.dev.survivallog.exiledtoolkit";
 
     /// <summary>Lines add up over a long session, so past 1 MB the file is moved to action-speed.log.1 and started again.</summary>
@@ -42,11 +42,13 @@ public sealed class Plugin : BasePlugin
         var savedSettings = ActionSettings.ReadFile(Config.ConfigFilePath, log.Write);
         var actions = BindActions();
         var isReopenFree = Config.Bind("Actions", "FreeSecondSearch", false, Rule(
-            "When true, searching a container you have already searched opens it at once: no time passes, so an expedition adds no exposure for it. When false, every search takes the game's time.\n" +
-            "设为 true 时，搜寻已经搜过的容器会立即打开：不花时间，外出探索时也不会因此增加暴露值。设为 false 时，每次搜寻都按游戏原本的时间进行。"));
+            "When true, searching a container you have already searched opens it at once. No game time passes, so it adds no exposure on an expedition. When false, every search takes its usual time, set by its speed setting or override.\n" +
+            "设为 true 时，搜寻已经搜过的容器会立即打开：不花时间，外出探索时也不会因此增加暴露值。设为 false 时，每次搜寻都按平常的时间进行，也就是它的速度设置或单独设置给出的时间。"));
         var walking = BindWalking();
-        var crafting = BindKind("Crafting", "crafting at a workbench", "工作台手工制作");
-        var travel = BindKind("Travel", "travel between home and an expedition place, both ways; the map shows the new time", "往返家与外出地点的路程，去程和回程都算；地图上显示新的时间");
+        var crafting = BindKind("Crafting", "Speed of crafting at a workbench.", "工作台手工制作的速度。");
+        var travel = BindKind("Travel",
+            "Speed of the trip between home and an expedition place, going out and coming home. The map shows the new time.",
+            "往返家与外出地点的路程速度，去程和回程都算。地图上会显示新的时间。");
         var work = BindWork();
         var hooks = new PatchKit(new Harmony(Guid), log.Write, MaxLoggedFailures);
         var writer = new ActionWriter(Path.Combine(Paths.BepInExRootPath, "action-speed-actions.txt"), log.Write, EffectClockPatch.Publish, EffectClockPatch.PublishSearches);
@@ -82,11 +84,11 @@ public sealed class Plugin : BasePlugin
     {
         var speeds = ActionSettings.Bind(Config);
         var isFullBenefits = Config.Bind("Actions", "FullBenefits", true, Rule(
-            "When true, a sped-up action still gives its full effect: a faster sleep rests you as much as a normal one. When false, a sped-up action ends early and gives only what it gave in that shorter time.\n" +
+            "When true, a sped-up action still gives its full effect: a faster sleep rests you as much as a normal one. When false, a sped-up action ends early and gives only what it would in that shorter time.\n" +
             "设为 true 时，加速的动作仍有完整效果：睡得更快也能休息得和平常一样足。设为 false 时，加速的动作会提前结束，只获得这段较短时间内的效果。"));
         var overrides = Config.Bind("Actions", "Overrides", "",
-            "Speeds for single actions, written as id:speed and separated by commas; these beat every speed setting. For example, 112:4 makes Use Toilet four times as fast. Every action and its id is listed in BepInEx\\action-speed-actions.txt.\n" +
-            "单独设置某个动作的速度，格式为 id:速度，多个用英文逗号分隔，优先于所有速度设置。例如 112:4 让上厕所变为四倍速。所有动作及其 id 列在 BepInEx\\action-speed-actions.txt 中。");
+            "Speeds for single actions, written as id:speed and separated by commas. An override beats every other speed setting. For example, 112:4 makes Use Toilet four times as fast. Every action and its id is listed in BepInEx\\action-speed-actions.txt.\n" +
+            "单独设置某个动作的速度，格式为 id:速度，多个用英文逗号分隔。这里的设置优先于其他所有速度设置。例如 112:4 让上厕所变为四倍速。所有动作及其 id 列在 BepInEx\\action-speed-actions.txt 中。");
 
         return new ActionEntries(speeds, isFullBenefits, overrides);
     }
@@ -103,8 +105,8 @@ public sealed class Plugin : BasePlugin
     private WalkEntries BindWalking()
     {
         var player = Config.Bind("Walking", "Speed", 1f, Rule(
-            $"How fast you walk, meaning the character you control. {WalkRange}\n" +
-            $"你的行走速度，也就是你操控的那个角色。{WalkRangeChinese}"));
+            $"How fast the character you control walks. {WalkRange}\n" +
+            $"你操控的角色的行走速度。{WalkRangeChinese}"));
         var robot = Config.Bind("Walking", "RobotSpeed", 1f, Rule(
             $"How fast robots move. {WalkRange}\n" +
             $"机器人的移动速度。{WalkRangeChinese}"));
@@ -118,8 +120,8 @@ public sealed class Plugin : BasePlugin
     private WorkEntries BindWork()
     {
         var player = Config.Bind("Work", "Speed", 1f, Rule(
-            $"How fast you do every action, meaning the character you control, on top of each action's own speed. The action still gives its full effect. {ActionRange} 0 or less counts as 1.\n" +
-            $"你做每个动作的速度，也就是你操控的那个角色，叠加在各动作自己的速度之上。动作仍有完整效果。{ActionRangeChinese}0 或更小按 1 计算。"));
+            $"How fast the character you control does every action, on top of each action's own speed. The action still gives its full effect. {ActionRange} 0 or less counts as 1.\n" +
+            $"你操控的角色做每个动作的速度，叠加在各动作自己的速度之上。动作仍有完整效果。{ActionRangeChinese}0 或更小按 1 计算。"));
         var robot = Config.Bind("Work", "RobotSpeed", 1f, Rule(
             $"How fast robots do every action, on top of each action's own speed. The action still gives its full effect. {ActionRange} 0 or less counts as 1.\n" +
             $"机器人做每个动作的速度，叠加在各动作自己的速度之上。动作仍有完整效果。{ActionRangeChinese}0 或更小按 1 计算。"));
@@ -139,10 +141,10 @@ public sealed class Plugin : BasePlugin
         new(Walking.Clamp(walking.Player.Value), Walking.Clamp(walking.Robot.Value), Walking.Clamp(walking.Survivor.Value));
 
     /// <summary>Work the game times outside its action table; 1 leaves the game's timing exactly as it is.</summary>
-    private ConfigEntry<float> BindKind(string key, string work, string workChinese) =>
+    private ConfigEntry<float> BindKind(string key, string description, string descriptionChinese) =>
         Config.Bind("Speed", key, 1f, Rule(
-            $"Speed of {work}. {ActionRange} 0 or less counts as 1.\n" +
-            $"{workChinese}的速度。{ActionRangeChinese}0 或更小按 1 计算。"));
+            $"{description} {ActionRange} 0 or less counts as 1.\n" +
+            $"{descriptionChinese}{ActionRangeChinese}0 或更小按 1 计算。"));
 
     private static KindSpeed ReadKind(string key, float value, Action<string> log)
     {
