@@ -16,11 +16,11 @@ using static ActionSpeed.Adapters.WorldRule;
 namespace ActionSpeed;
 
 [BepInPlugin(Guid, "Action Speed", Version)]
-[BepInDependency(ToolkitGuid, ">=0.19.0")]
+[BepInDependency(ToolkitGuid, ">=0.25.0")]
 public sealed class Plugin : BasePlugin
 {
-    private const string Guid = "com.dev.survivallog.actionspeed";
-    private const string Version = "0.10.2";
+    internal const string Guid = "com.dev.survivallog.actionspeed";
+    private const string Version = "0.10.3";
     private const string ToolkitGuid = "com.dev.survivallog.exiledtoolkit";
 
     /// <summary>Lines add up over a long session, so past 1 MB the file is moved to action-speed.log.1 and started again.</summary>

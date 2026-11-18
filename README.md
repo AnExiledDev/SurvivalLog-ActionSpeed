@@ -53,9 +53,9 @@ A craft gets its speed when it starts.
 
 ## Requirements
 
-- Survival Log 1.1.20719. It's built for this version, so a game update can break it until the mod is updated.
+- Survival Log 1.1.21271. It's built for this version, so a game update can break it until the mod is updated.
 - The [BepInEx Pack for Survival Log](https://www.nexusmods.com/survivallog/mods/12), the BepInEx 6 (IL2CPP) build for the game.
-- [Exiled's Toolkit](https://github.com/AnExiledDev/SurvivalLog-ExiledToolkit) 0.19.0 or newer. Action Speed does not load without it. It applies settings changed on the Mod Manager's Mods screen without restarting the game, and lets each world keep its own speed settings.
+- [Exiled's Toolkit](https://github.com/AnExiledDev/SurvivalLog-ExiledToolkit) 0.25.0 or newer. Action Speed does not load without it. It applies settings changed on the Mod Manager's Mods screen without restarting the game, and lets each world keep its own speed settings.
 - Optional: [Mod Manager](https://www.nexusmods.com/survivallog/mods/73). With it, you can change every setting in game on its Mods screen and see what each one does, without opening the config file.
 
 ## Install
@@ -76,9 +76,9 @@ Settings live in `BepInEx\config\com.dev.survivallog.actionspeed.cfg`, created t
 
 ## Troubleshooting
 
-Built for Survival Log 1.1.20719 with BepInEx `6.0.0-be.788`.
+Built for Survival Log 1.1.21271 with BepInEx `6.0.0-be.788`.
 
-Check `BepInEx\LogOutput.log` for `===== Action Speed 0.10.2 started`. The line after it lists the action speeds in use, such as `most actions x2, except Leisure/Reading x10`, then for example `full benefits on, free second search off, work x1 for you, x1 for the robot, x1 for survivors`. Lines below it say what was hooked, such as `full benefits on, sped-up actions give everything they give at the game's pace`, `progress bars of sped-up actions fill with the action`, `walking speed x1.5 for you, x1 for the robot, x1 for survivors`, `expedition travel x2` and `crafting left at the game's pace`. A setting changed on the Mods screen writes its lines again. A line starting `could not hook` means a game update has changed that part of the game, and it stays at the game's pace until the mod is updated.
+Check `BepInEx\LogOutput.log` for `===== Action Speed 0.10.3 started`. The line after it lists the action speeds in use, such as `most actions x2, except Leisure/Reading x10`, then for example `full benefits on, free second search off, work x1 for you, x1 for the robot, x1 for survivors`. Lines below it say what was hooked, such as `full benefits on, sped-up actions give everything they give at the game's pace`, `progress bars of sped-up actions fill with the action`, `walking speed x1.5 for you, x1 for the robot, x1 for survivors`, `expedition travel x2` and `crafting left at the game's pace`. A setting changed on the Mods screen writes its lines again. A line starting `could not hook` means a game update has changed that part of the game, and it stays at the game's pace until the mod is updated.
 
 Once the game has loaded its tables, look for `N of M actions changed, every action is listed in action-speed-actions.txt`.
 
@@ -100,7 +100,7 @@ This is a BepInEx 6 IL2CPP plugin. It compiles against BepInEx and the game's IL
 dotnet build src/ActionSpeed -c Release -p:GameDir="C:\path\to\Survival Log"
 ```
 
-`GameDir` is the game folder. The default in the project file is a local path you will almost certainly need to override. Compiling also needs Exiled's Toolkit 0.19.0 or newer: point `-p:ToolkitDll="C:\path\to\ExiledToolkit.dll"` at its DLL. The output DLL is at `src\ActionSpeed\bin\Release\ActionSpeed.dll`.
+`GameDir` is the game folder. The default in the project file is a local path you will almost certainly need to override. Compiling also needs Exiled's Toolkit 0.25.0 or newer: point `-p:ToolkitDll="C:\path\to\ExiledToolkit.dll"` at its DLL. The output DLL is at `src\ActionSpeed\bin\Release\ActionSpeed.dll`.
 
 The unit tests cover the pure logic (which setting each action follows, how old settings move to the new ones, how each action's time and effect clock are worked out, that a sped-up action with full benefits pays out the same, who walks at which speed, the speed checks and the scaling of crafts). They need nothing from the game:
 

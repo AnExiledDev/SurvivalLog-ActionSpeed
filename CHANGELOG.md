@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.10.3
+
+- Mod Manager's Conflicts tab can now see what Action Speed changes in the game, like how long each action takes, so it can show when another mod changes the same things.
+- Now needs Exiled's Toolkit 0.25.0 or newer.
+- Made for Survival Log 1.1.21271.
+
 ## 0.10.2
 
 - Clearer wording in the settings and in the mod description on the Mods screen.

@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using ActionSpeed.Core;
+using ExiledToolkit;
 using ExiledToolkit.Kit;
 using GameCore.HotUpdate;
 using ActionTable = Il2CppSystem.Collections.Generic.Dictionary<int, GameCore.HotUpdate.Config_Action>;
@@ -16,7 +17,8 @@ namespace ActionSpeed.Adapters;
 /// starts, and hands each action's effect clock to the effect hook. The table only exists once the game has loaded
 /// it, and a reload would bring back the game's durations, so each sweep checks whether the table was replaced, the
 /// language changed or a few changed actions lost their duration, and only then reads the table again. That read
-/// asks the game about every action, so it runs a slice per frame and writes the table once it is all read.
+/// asks the game about every action, so it runs a slice per frame and writes the table once it is all read. Each
+/// duration written is reported to Mod Manager, and one written back to the game's counts as put back.
 /// </summary>
 internal sealed class ActionWriter
 {
@@ -252,8 +254,17 @@ internal sealed class ActionWriter
         if (!_planned.TryGetValue(read.Row.Id, out var during) || read.Action._During_k__BackingField == during) return false;
 
         read.Action._During_k__BackingField = during;
+        Report(read.Row.Id, during, read.Row.GameDuring);
 
         return true;
+    }
+
+    private static void Report(int id, float during, float gameDuring)
+    {
+        var field = nameof(Config_Action.During);
+
+        if (during == gameDuring) Claims.PutBack(Plugin.Guid, nameof(Config_Action), id, field);
+        else Claims.Wrote(Plugin.Guid, nameof(Config_Action), id, field, during);
     }
 
     /// <summary>The list is a few hundred lines of text, so it is built and written on a worker; only the newest one waiting is written.</summary>
