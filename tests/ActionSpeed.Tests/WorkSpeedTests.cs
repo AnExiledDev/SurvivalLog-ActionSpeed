@@ -99,7 +99,7 @@ public class WorkSpeedTests
         public Character Owner() => Who;
     }
 
-    /// <summary>Whose progress bar it is; a null worker fails when asked, for what must not look the owner up.</summary>
+    /// <summary>Whose progress bar it is; a null worker fails when asked, to test code that must not look the owner up.</summary>
     private readonly record struct Worker(Character? Who) : IEffectOwner
     {
         public bool IsOwnersTargetSearched() => false;

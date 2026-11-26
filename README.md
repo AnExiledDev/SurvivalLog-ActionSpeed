@@ -90,7 +90,7 @@ Found a bug, have an idea, or something feels off? Come say hi in the [unofficia
 
 To reach me directly, message `exiled.dev` on Discord. You can find me in the [unofficial modding Discord](https://discord.gg/pDrQtqbZgb) and the [official Survival Log Discord](https://discord.gg/MZGg4gQAUe). I'm also on X as [@AnExiledDev](https://x.com/AnExiledDev).
 
-A Survival Log wiki with detailed documentation for all of my mods is coming soon.
+Check out my [Survival Log wiki](https://sldb.core-directive.com/en/) for items, crafting, maps and more.
 
 ## Build
 

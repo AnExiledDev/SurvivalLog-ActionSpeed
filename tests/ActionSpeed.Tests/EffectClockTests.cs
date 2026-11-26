@@ -183,7 +183,7 @@ public class EffectClockTests
         public Character Owner() => Who;
     }
 
-    /// <summary>An effect whose every read fails, for what must decide without reading the game's memory.</summary>
+    /// <summary>An effect whose every read fails, to test code that must decide without reading the game's memory.</summary>
     private readonly struct UnreadableEffect : IRunningEffect
     {
         public bool IsActionEffect => throw Read();
