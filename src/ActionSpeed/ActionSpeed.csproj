@@ -34,7 +34,7 @@
     <AssemblyMetadata Include="ModManager.Description" Value="Makes everyday actions like eating, sleeping and using furniture take less game time while still giving their full benefit. You, the robot and your survivors can also walk and work faster, and crafting and expedition travel can be sped up.&#10;让吃饭、睡觉、使用家具等日常动作花更少的游戏时间，效果却不减。你、机器人和幸存者还能走得更快、干活更快，制造和外出路程也能加快。" />
     <AssemblyMetadata Include="ModManager.Author" Value="AnExiledDev" />
     <AssemblyMetadata Include="ModManager.Category" Value="Balance" />
-    <AssemblyMetadata Include="ModManager.GameVersion" Value="1.1.20719" />
+    <AssemblyMetadata Include="ModManager.GameVersion" Value="1.1.21271" />
     <AssemblyMetadata Include="ModManager.Settings" Value="Restart" />
     <AssemblyMetadata Include="ModManager.NexusId" Value="53" />
     <AssemblyMetadata Include="ModManager.GitHub" Value="AnExiledDev/SurvivalLog-ActionSpeed" />
